@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View, TextInput, Button, Alert, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { supabase } from './supabase';
@@ -7,6 +7,21 @@ export default function App() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState('');
+  const [session, setSession] = useState(null); //jestli je nekdo prihlaseny
+
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+    });
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    setSession(session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
+
+
 
   async function handleLogin() {
     if (!email || !password) {
@@ -50,6 +65,22 @@ export default function App() {
     } else {
       Alert.alert('Success!', 'Your account was created successfully. You can loggin now!');
     }
+  }
+
+  async function handleSignOut(){
+    await supabase.auth.signOut();
+  }
+
+  if (session) {
+    return(
+      <View style={styles.container}>
+        <Text>Main page</Text>
+        <Text>Welcome {session.user.email}</Text>
+        <TouchableOpacity onPress={handleSignOut}>
+          <Text>SignOut</Text>
+        </TouchableOpacity>
+      </View>
+    )
   }
 
   return (
