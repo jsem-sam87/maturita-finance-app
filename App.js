@@ -71,13 +71,20 @@ export default function App() {
       return;
     }
 
+    const formattedAmount = txAmount.replace(',', '.');
+    const finalAmount = Math.abs(parseFloat(formattedAmount));
+    if (isNaN(finalAmount) || finalAmount <= 0) {
+      Alert.alert("Chyba", "Please enter a valid positive amount (E.g. 19.90 or 19,90).");
+      return;
+    }
+
     if (editingId) {
       // rezim upravty zaznamu
       const { error } = await supabase
         .from('transactions')
         .update({
           title: txTitle,
-          amount: parseFloat(txAmount),
+          amount: finalAmount,
           type: txType
         })
         .eq('id', editingId);
@@ -93,7 +100,7 @@ export default function App() {
         .insert([
           { 
             title: txTitle, 
-            amount: parseFloat(txAmount), 
+            amount: finalAmount, 
             type: txType,
             user_id: session.user.id // propojeni s prihlasenym uzivatelem
           }
@@ -281,7 +288,7 @@ export default function App() {
 
         <Modal visible={historyVisible} animationType="slide" transparent={false}>
           <View style={styles.container}>
-            <Text>Transaction history</Text>
+            <Text>Transaction history:</Text>
 
             {transactions.length === 0 ? (
               <Text>You don't have any records here yet.</Text>
