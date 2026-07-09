@@ -22,6 +22,12 @@ export default function App() {
 
   const [editingId, setEditingId] = useState(null); // null = pridavame novou, cislo = upravujeme stavajici
 
+  const [filterType, setFilterType] = useState('all'); // 'all', 'income', 'expense'
+
+
+  // dark mode
+  const [isDarkMode, setIsDarkMode] = useState(false);
+
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -210,94 +216,123 @@ export default function App() {
     );
   }
 
+  const filteredTransactions = transactions.filter(item => {
+    if (filterType === 'all') return true; //vse  
+    return item.type === filterType; // jen prijmy nebo vydaje
+  });
+
+  const colors = isDarkMode ? theme.dark : theme.light;
+
+
   // ***** Pages *****
   // --- Main page ---
 
   if (session) {
     return(
-      <View style={styles.container}>
-        <Text>Main page</Text>
-        <Text>Welcome {session.user.email}</Text>
-        <Text>Balance:</Text>
-        <Text>{balance} Kč</Text>
+      <View style={[styles.container, {backgroundColor: colors.background}]}>
+        <TouchableOpacity 
+          onPress={() => setIsDarkMode(!isDarkMode)}
+        >
+          <Text style={{ color: colors.text }}>{isDarkMode ? '☀️' : '🌙'}</Text>
+        </TouchableOpacity>
+        <Text style={{ color: colors.text }}>Main page</Text>
+        <Text style={{ color: colors.text }}>Welcome {session.user.email}</Text>
+        <Text style={{ color: colors.text }}>Balance:</Text>
+        <Text style={{ color: colors.text }}>{balance} Kč</Text>
         <TouchableOpacity onPress={() => setModalVisible(true)}>
-          <Text >+ Add record</Text>
+          <Text style={{ color: colors.text }}>+ Add record</Text>
         </TouchableOpacity>
 
     {/* --- Add record page --- */}
 
         <Modal visible={modalVisible} animationType="slide" transparent={false}>
-          <View style={styles.container}>
-            <Text>{editingId ? "Edit record" : "New record"}</Text>
-            <Text>Name:</Text>
+          <View style={[styles.container, {backgroundColor: colors.background}]}>
+            <Text style={{ color: colors.text }}>{editingId ? "Edit record" : "New record"}</Text>
+            <Text style={{ color: colors.text }}>Name:</Text>
             <TextInput
+              style={{ color: colors.text }}
               placeholder="E.g. Salary, Groceries..."
+              placeholderTextColor={colors.textMuted}
               value={txTitle} 
               onChangeText={setTxTitle}
             />
 
-            <Text>Amount:</Text>
+            <Text style={{ color: colors.text }}>Amount:</Text>
             <TextInput 
+              style={{ color: colors.text }}
               placeholder="0" 
+              placeholderTextColor={colors.textMuted}
               value={txAmount} 
               onChangeText={setTxAmount}
               keyboardType="numeric"
             />
 
-            <Text>Transaction type:</Text>
+            <Text style={{ color: colors.text }}>Transaction type:</Text>
             <View>
               <TouchableOpacity 
                 onPress={() => setTxType('income')}
               >
-                <Text>Income</Text>
+                <Text style={{ color: colors.text }}>Income</Text>
               </TouchableOpacity>
 
               <TouchableOpacity 
                 onPress={() => setTxType('expense')}
               >
-                <Text>expense</Text>
+                <Text style={{ color: colors.text }}>expense</Text>
               </TouchableOpacity>
             </View>
 
             {editingId && (
               <TouchableOpacity onPress={handleDeleteTransaction} style={{ marginTop: 15 }}>
-                <Text>Delete record</Text>
+                <Text style={{ color: colors.text }}>Delete record</Text>
               </TouchableOpacity>
             )}
 
             <TouchableOpacity onPress={handleAddTransaction}>
-              <Text>Save record</Text>
+              <Text style={{ color: colors.text }}>Save record</Text>
             </TouchableOpacity>
 
             <TouchableOpacity onPress={() => { setModalVisible(false); setEditingId(null); setTxTitle(''); setTxAmount(''); }}>
-              <Text>Cancel</Text>
+              <Text style={{ color: colors.text }}>Cancel</Text>
             </TouchableOpacity>
 
           </View>
         </Modal>
 
         <TouchableOpacity onPress={() => setHistoryVisible(true)}>
-          <Text style={styles.addButtonText}>Show history</Text>
+          <Text style={{color: colors.text}}>Show history</Text>
         </TouchableOpacity>
 
         <TouchableOpacity onPress={handleSignOut}>
-          <Text>SignOut</Text>
+          <Text style={{color: colors.text}}>SignOut</Text>
         </TouchableOpacity>
 
     {/* --- Transaction history page --- */}
 
         <Modal visible={historyVisible} animationType="slide" transparent={false}>
-          <View style={styles.container}>
-            <Text>Transaction history:</Text>
+          <View style={[styles.container, {backgroundColor: colors.background}]}>
+            <Text style={{ color: colors.text }}>Transaction history:</Text>
 
-            {transactions.length === 0 ? (
-              <Text>You don't have any records here yet.</Text>
+            <View>
+              <TouchableOpacity onPress={() => setFilterType('all')}>
+                <Text style={{ color: colors.text }}>All</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setFilterType('income')}>
+                <Text style={{ color: colors.text }}>Incomes</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setFilterType('expense')}>
+                <Text style={{ color: colors.text }}>Expenses</Text>
+              </TouchableOpacity>                              
+            </View>
+
+            {filteredTransactions.length === 0 ? (
+              <Text style={{ color: colors.text }}>You don't have any records with this filter here yet.</Text>
             ) : (
-              transactions.map((item) =>  (
+              filteredTransactions.map((item) =>  (
                 <TouchableOpacity key={item.id} onPress={() => handleOpenEdit(item)}>
                   <View>
-                    <Text>{item.title}</Text>
-                    <Text>
+                    <Text style={{ color: colors.text }}>{item.title}</Text>
+                    <Text style={{ color: colors.text }}>
                       {item.type === 'income' ? '+' : '-'}{item.amount} Kč
                     </Text>
                   </View>
@@ -306,7 +341,7 @@ export default function App() {
             )}
 
             <TouchableOpacity onPress={() => setHistoryVisible(false)}>
-              <Text>Close history</Text>
+              <Text style={{ color: colors.text }}>Close history</Text>
             </TouchableOpacity>
           </View>
         </Modal>
@@ -318,21 +353,25 @@ export default function App() {
   // -- Login page ---
 
   return (
-    <View style={styles.container}>
-      <Text>Welcome!</Text>
+    <View style={[styles.container, {backgroundColor: colors.background}]}>
+      <Text style={{ color: colors.text }}>Welcome!</Text>
       
-      <Text>E-mail:</Text>
+      <Text style={{ color: colors.text }}>E-mail:</Text>
       <TextInput
+        style={{ color: colors.text }}
         placeholder="jmeno@email.cz"
+        placeholderTextColor={colors.textMuted}
         value={email}
         onChangeText={(text) => setEmail(text)}
         autoCapitalize="none"
         keyboardType="email-address"
       />
 
-      <Text>password:</Text>
+      <Text style={{ color: colors.text }}>password:</Text>
       <TextInput
+          style={{ color: colors.text }}
           placeholder="_____"
+          placeholderTextColor={colors.textMuted}
           value={password}
           onChangeText={(text) => setPassword(text)}
           secureTextEntry={true}
@@ -346,7 +385,7 @@ export default function App() {
           {loading ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={styles.buttonText}>Login</Text>
+            <Text style={{ color: colors.text }}>Login</Text>
           )}
       </TouchableOpacity>
 
@@ -355,13 +394,32 @@ export default function App() {
         onPress={handleSignUp}
         // disabled={loading}
       >
-        <Text>SignUp</Text>
+        <Text style={{ color: colors.text }}>SignUp</Text>
       </TouchableOpacity>
 
       <StatusBar style="auto" />
     </View>
   );
 }
+
+const theme = {
+  light: {
+    background: '#f2f2f2',
+    card: '#f2f2f2', //nepopuzito 
+    text: '#2a2a2a',
+    textMuted: '#7d7d7d',
+    border: '#e2e8f0',  //nepopuzito 
+    primary: '#fdfd2d',  //nepopuzito 
+  },
+  dark: {
+    background: '#2a2a2a', 
+    card: '#1e293b',  //nepopuzito      
+    text: '#f8fafc', 
+    textMuted: '#7d7d7d',
+    border: '#334155',  //nepopuzito 
+    primary: '#fdfd2d',  //nepopuzito 
+  }
+};
 
 
 const styles = StyleSheet.create({
