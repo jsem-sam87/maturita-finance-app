@@ -144,9 +144,10 @@ export default function App() {
 
     if (error) {
       Alert.alert("Login failed", error.message);
-    } else {
-      Alert.alert("Success", "Welcome back!")
     }
+    // else {
+    //   Alert.alert("Success", "Welcome back!")
+    // }
   }
 
   async function handleSignUp() {
@@ -230,18 +231,39 @@ export default function App() {
   if (session) {
     return(
       <View style={[styles.container, {backgroundColor: colors.background}]}>
-        <TouchableOpacity 
-          onPress={() => setIsDarkMode(!isDarkMode)}
-        >
-          <Text style={{ color: colors.text }}>{isDarkMode ? '☀️' : '🌙'}</Text>
-        </TouchableOpacity>
-        <Text style={{ color: colors.text }}>Main page</Text>
+        <View style={styles.headerRow}>
+          <Text style={[styles.mainPageTitle, { color: colors.primary }]}>Main page</Text>
+          
+          <TouchableOpacity 
+            style={styles.themeToggle}
+            onPress={() => setIsDarkMode(!isDarkMode)}
+          >
+            <Text style={{ fontSize: 24 }}>{isDarkMode ? '☀️' : '🌙'}</Text>
+          </TouchableOpacity>          
+      </View>
+      <View style={styles.contentContainer}>
         <Text style={{ color: colors.text }}>Welcome {session.user.email}</Text>
-        <Text style={{ color: colors.text }}>Balance:</Text>
-        <Text style={{ color: colors.text }}>{balance} Kč</Text>
-        <TouchableOpacity onPress={() => setModalVisible(true)}>
-          <Text style={{ color: colors.text }}>+ Add record</Text>
-        </TouchableOpacity>
+        <View style={[styles.balanceCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+          <Text style={{ color: colors.textMuted, fontSize: 14, fontWeight: '600', letterSpacing: 0.5 }}>
+              CURRENT BALANCE:
+          </Text>
+          <Text style={{ color: colors.primary, fontSize: 36, fontWeight: '800', marginTop: 10 }}>
+              {balance} Kč
+          </Text>
+        </View>
+        <View style={styles.actionsRow}>
+          <TouchableOpacity style={styles.primaryButton} onPress={() => setModalVisible(true)}>
+            <Text style={styles.primaryButtonText}>+ Add record</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity style={[styles.secondaryButton, { borderColor: colors.border }]} onPress={() => setHistoryVisible(true)}>
+            <Text style={{ color: colors.text, fontWeight: '600' }}>Show history</Text>
+          </TouchableOpacity>
+        </View>
+      </View>  
+      <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
+        <Text style={{ color: '#ef4444', fontWeight: '600',}}>Sign Out</Text>
+      </TouchableOpacity>
 
     {/* --- Add record page --- */}
 
@@ -299,14 +321,6 @@ export default function App() {
           </View>
         </Modal>
 
-        <TouchableOpacity onPress={() => setHistoryVisible(true)}>
-          <Text style={{color: colors.text}}>Show history</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity onPress={handleSignOut}>
-          <Text style={{color: colors.text}}>SignOut</Text>
-        </TouchableOpacity>
-
     {/* --- Transaction history page --- */}
 
         <Modal visible={historyVisible} animationType="slide" transparent={false}>
@@ -354,47 +368,53 @@ export default function App() {
 
   return (
     <View style={[styles.container, {backgroundColor: colors.background}]}>
-      <Text style={{ color: colors.text }}>Welcome!</Text>
-      
-      <Text style={{ color: colors.text }}>E-mail:</Text>
-      <TextInput
-        style={{ color: colors.text }}
-        placeholder="jmeno@email.cz"
-        placeholderTextColor={colors.textMuted}
-        value={email}
-        onChangeText={(text) => setEmail(text)}
-        autoCapitalize="none"
-        keyboardType="email-address"
-      />
+      <Text style={{ color: colors.primary, fontSize: 24, margin: 20 }}>Finance Tracker App</Text>
+      <View style={styles.logInPageContainer}>
+        <View style={styles.logInPageRow}>
+          <Text style={{ color: colors.text, fontSize: 18 }}>E-mail:</Text>
+          <TextInput
+            style={{ color: colors.text, fontSize: 18  }}
+            placeholder="name@email.com"
+            placeholderTextColor={colors.textMuted}
+            value={email}
+            onChangeText={(text) => setEmail(text)}
+            autoCapitalize="none"
+            keyboardType="email-address"
+          />
+        </View>
 
-      <Text style={{ color: colors.text }}>password:</Text>
-      <TextInput
-          style={{ color: colors.text }}
-          placeholder="_____"
-          placeholderTextColor={colors.textMuted}
-          value={password}
-          onChangeText={(text) => setPassword(text)}
-          secureTextEntry={true}
-          autoCapitalize="none"
-      />
-
+        <View style={styles.logInPageRow}>
+          <Text style={{ color: colors.text, fontSize: 18 }}>password:</Text>
+          <TextInput
+              style={{ color: colors.text, fontSize: 18}}
+              placeholder="_____"
+              placeholderTextColor={colors.textMuted}
+              value={password}
+              onChangeText={(text) => setPassword(text)}
+              secureTextEntry={true}
+              autoCapitalize="none"
+          />
+        </View>
+      </View>  
       <TouchableOpacity
         onPress={handleLogin}
+        style={[styles.logInButton, {borderColor: colors.border}]}
         // disabled={loading}
         >
           {loading ? (
             <ActivityIndicator color="#fff" />
           ) : (
-            <Text style={{ color: colors.text }}>Login</Text>
+            <Text style={{ color: "#f2f2f2" }}>Login</Text>
           )}
       </TouchableOpacity>
 
 
       <TouchableOpacity 
         onPress={handleSignUp}
+        style={[styles.signUpButton, {borderColor: colors.border}]}
         // disabled={loading}
       >
-        <Text style={{ color: colors.text }}>SignUp</Text>
+        <Text style={{ color: "#f2f2f2" }}>SignUp</Text>
       </TouchableOpacity>
 
       <StatusBar style="auto" />
@@ -408,16 +428,16 @@ const theme = {
     card: '#f2f2f2', //nepopuzito 
     text: '#2a2a2a',
     textMuted: '#7d7d7d',
-    border: '#e2e8f0',  //nepopuzito 
-    primary: '#fdfd2d',  //nepopuzito 
+    border: '#2a2a2a',  //nepopuzito 
+    primary: '#00d238', 
   },
   dark: {
     background: '#2a2a2a', 
-    card: '#1e293b',  //nepopuzito      
+    card: '#2a2a2a',  //nepopuzito      
     text: '#f8fafc', 
     textMuted: '#7d7d7d',
-    border: '#334155',  //nepopuzito 
-    primary: '#fdfd2d',  //nepopuzito 
+    border: '#f2f2f2',  //nepopuzito 
+    primary: '#fdfd2d',
   }
 };
 
@@ -425,8 +445,101 @@ const theme = {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    paddingTop: 50,
+    alignItems: 'center',
+    justifyContent: 'flex-start',
+  },
+  contentContainer: {
+    width: '95%',
     alignItems: 'center',
     justifyContent: 'center',
   },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '90%',
+    marginBottom: 30, 
+  },
+  mainPageTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  themeToggle: {
+    padding: 5,
+  },
+  balanceCard: {
+    width: '90%',
+    padding: 25,
+    borderRadius: 16,
+    borderWidth: 1,
+    margin: 10,
+  },
+  actionsRow: {
+    flexDirection: 'row', // Tlačítka vedle sebe!
+    justifyContent: 'space-between',
+    width: '90%',
+  },
+  primaryButton: {
+    flex: 1,
+    backgroundColor: '#3b82f6',
+    paddingVertical: 15,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginRight: 6,
+  },
+  primaryButtonText: {
+    color: '#fff',
+    fontWeight: '600',
+  },
+  secondaryButton: {
+    flex: 1,
+    paddingVertical: 15,
+    borderRadius: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    marginLeft: 5,
+  },
+  signOutButton: {
+    paddingVertical: 15,
+    borderRadius: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    marginTop: 'auto',
+    marginBottom: 30,
+    width: '90%',
+    borderColor: '#ef4444',
+  },
+  logInButton: {
+    backgroundColor: '#3b82f6',
+    paddingVertical: 15,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginTop: 'auto',
+    marginBottom: 10,
+    width: '90%',
+  },
+  signUpButton: {
+    backgroundColor: '#3b82f6',
+    paddingVertical: 15,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginBottom: 30,
+    width: '90%',
+  },
+  logInPageContainer:{
+    width: '95%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: '50%',
+  },
+  logInPageRow: {
+    flexDirection: 'row',
+     alignItems: 'center',
+     width: '90%',
+  },
+  text: {
+
+  }
+
 });
