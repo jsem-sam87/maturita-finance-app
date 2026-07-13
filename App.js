@@ -261,63 +261,76 @@ export default function App() {
           </TouchableOpacity>
         </View>
       </View>  
-      <TouchableOpacity style={styles.signOutButton} onPress={handleSignOut}>
-        <Text style={{ color: '#ef4444', fontWeight: '600',}}>Sign Out</Text>
+      <TouchableOpacity style={[ styles.signOutButton, {borderColor: colors.border}]} onPress={handleSignOut}>
+        <Text style={{ color: colors.text, fontWeight: '600',}}>Sign Out</Text>
       </TouchableOpacity>
 
     {/* --- Add record page --- */}
 
         <Modal visible={modalVisible} animationType="slide" transparent={false}>
-          <View style={[styles.container, {backgroundColor: colors.background}]}>
-            <Text style={{ color: colors.text }}>{editingId ? "Edit record" : "New record"}</Text>
-            <Text style={{ color: colors.text }}>Name:</Text>
-            <TextInput
-              style={{ color: colors.text }}
-              placeholder="E.g. Salary, Groceries..."
-              placeholderTextColor={colors.textMuted}
-              value={txTitle} 
-              onChangeText={setTxTitle}
-            />
+          <View style={[styles.container, {backgroundColor: colors.background, paddingTop: 20}]}>
+            <View style={styles.headerRow}>
+              <Text style={[styles.recordPageTitle, { color: colors.primary }]}>{editingId ? "Edit record:" : "New record:"}</Text>
+            </View>
+            <View style={styles.contentContainer}>
+              <View style={styles.recordPageRow}>
+                <Text style={{ color: colors.primary, fontSize: 18 }}>Name:</Text>
+                <TextInput
+                  style={{ color: colors.text, fontSize: 18 }}
+                  placeholder="E.g. Salary, Groceries..."
+                  placeholderTextColor={colors.textMuted}
+                  value={txTitle} 
+                  onChangeText={setTxTitle}
+                />
+              </View>
 
-            <Text style={{ color: colors.text }}>Amount:</Text>
-            <TextInput 
-              style={{ color: colors.text }}
-              placeholder="0" 
-              placeholderTextColor={colors.textMuted}
-              value={txAmount} 
-              onChangeText={setTxAmount}
-              keyboardType="numeric"
-            />
+              <View style={styles.recordPageRow}>
+                <Text style={{ color: colors.primary, fontSize: 18 }}>Amount:</Text>
+                <TextInput 
+                  style={{ color: colors.text, fontSize: 18 }}
+                  placeholder="0" 
+                  placeholderTextColor={colors.textMuted}
+                  value={txAmount} 
+                  onChangeText={setTxAmount}
+                  keyboardType="numeric"
+                />
+              </View>  
 
-            <Text style={{ color: colors.text }}>Transaction type:</Text>
-            <View>
-              <TouchableOpacity 
-                onPress={() => setTxType('income')}
-              >
-                <Text style={{ color: colors.text }}>Income</Text>
-              </TouchableOpacity>
+              {/* <Text style={{ color: colors.text }}>Transaction type:</Text> */}
+              <View style={styles.incomeExpenseRow}>
+                <TouchableOpacity 
+                  onPress={() => setTxType('income')}
+                  style={[ styles.incomeExpenseButton, {borderColor: colors.border, backgroundColor: txType === 'income' ? '#3b82f6' : '#00000000'}]}
+                >
+                  <Text style={{ color: colors.text, fontSize: 18 }}>Income</Text>
+                </TouchableOpacity>
 
-              <TouchableOpacity 
-                onPress={() => setTxType('expense')}
-              >
-                <Text style={{ color: colors.text }}>expense</Text>
-              </TouchableOpacity>
+                <TouchableOpacity 
+                  onPress={() => setTxType('expense')}
+                  style={[ styles.incomeExpenseButton, {borderColor: colors.border, backgroundColor: txType === 'expense' ? '#3b82f6' : '#00000000'}]}
+                >
+                  <Text style={{ color: colors.text, fontSize: 18 }}>Expense</Text>
+                </TouchableOpacity>
+              </View>
             </View>
 
+            <View style={styles.rocordPageBottomContainer}>
             {editingId && (
-              <TouchableOpacity onPress={handleDeleteTransaction} style={{ marginTop: 15 }}>
-                <Text style={{ color: colors.text }}>Delete record</Text>
+              <TouchableOpacity onPress={handleDeleteTransaction} style={[styles.deleteRecordButton, {borderColor: colors.border, marginTop: 15}]}>
+                  <Text style={{ color: colors.text }}>Delete record</Text>
               </TouchableOpacity>
-            )}
+              )}
 
-            <TouchableOpacity onPress={handleAddTransaction}>
-              <Text style={{ color: colors.text }}>Save record</Text>
-            </TouchableOpacity>
+              <TouchableOpacity onPress={handleAddTransaction}
+              style={[styles.saveRecordButton, {borderColor: colors.border}]}>
+                <Text style={{ color: colors.text }}>Save record</Text>
+              </TouchableOpacity>
 
-            <TouchableOpacity onPress={() => { setModalVisible(false); setEditingId(null); setTxTitle(''); setTxAmount(''); }}>
-              <Text style={{ color: colors.text }}>Cancel</Text>
-            </TouchableOpacity>
-
+              <TouchableOpacity onPress={() => { setModalVisible(false); setEditingId(null); setTxTitle(''); setTxAmount(''); }}
+              style={[styles.cancelRecordButton, {borderColor: colors.border}]}>
+                <Text style={{ color: colors.text }}>Cancel</Text>
+              </TouchableOpacity>
+            </View>  
           </View>
         </Modal>
 
@@ -368,10 +381,18 @@ export default function App() {
 
   return (
     <View style={[styles.container, {backgroundColor: colors.background}]}>
-      <Text style={{ color: colors.primary, fontSize: 24, margin: 20 }}>Finance Tracker App</Text>
+      <View style={styles.headerRow}>
+        <Text style={[styles.loginPageTitle, { color: colors.primary }]}>Finance Tracker App</Text>
+        <TouchableOpacity 
+          style={styles.themeToggle}
+          onPress={() => setIsDarkMode(!isDarkMode)}
+        >
+          <Text style={{ fontSize: 24 }}>{isDarkMode ? '☀️' : '🌙'}</Text>
+        </TouchableOpacity>          
+      </View>
       <View style={styles.logInPageContainer}>
         <View style={styles.logInPageRow}>
-          <Text style={{ color: colors.text, fontSize: 18 }}>E-mail:</Text>
+          <Text style={{ color: colors.primary, fontSize: 18 }}>E-mail:</Text>
           <TextInput
             style={{ color: colors.text, fontSize: 18  }}
             placeholder="name@email.com"
@@ -384,7 +405,7 @@ export default function App() {
         </View>
 
         <View style={styles.logInPageRow}>
-          <Text style={{ color: colors.text, fontSize: 18 }}>password:</Text>
+          <Text style={{ color: colors.primary, fontSize: 18 }}>password:</Text>
           <TextInput
               style={{ color: colors.text, fontSize: 18}}
               placeholder="_____"
@@ -425,18 +446,18 @@ export default function App() {
 const theme = {
   light: {
     background: '#f2f2f2',
-    card: '#f2f2f2', //nepopuzito 
+    card: '#f2f2f2',
     text: '#2a2a2a',
     textMuted: '#7d7d7d',
-    border: '#2a2a2a',  //nepopuzito 
-    primary: '#00d238', 
+    border: '#2a2a2a',
+    primary: '#0040FF', //#00d238
   },
   dark: {
     background: '#2a2a2a', 
-    card: '#2a2a2a',  //nepopuzito      
+    card: '#2a2a2a',   
     text: '#f8fafc', 
     textMuted: '#7d7d7d',
-    border: '#f2f2f2',  //nepopuzito 
+    border: '#f2f2f2',
     primary: '#fdfd2d',
   }
 };
@@ -450,7 +471,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-start',
   },
   contentContainer: {
-    width: '95%',
+    width: '100%',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -462,6 +483,14 @@ const styles = StyleSheet.create({
     marginBottom: 30, 
   },
   mainPageTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  loginPageTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+  }, 
+  recordPageTitle: {
     fontSize: 24,
     fontWeight: 'bold',
   },
@@ -508,7 +537,8 @@ const styles = StyleSheet.create({
     marginTop: 'auto',
     marginBottom: 30,
     width: '90%',
-    borderColor: '#ef4444',
+    // borderColor: '#ef4444',
+    backgroundColor: '#ef4444',
   },
   logInButton: {
     backgroundColor: '#3b82f6',
@@ -527,16 +557,70 @@ const styles = StyleSheet.create({
     marginBottom: 30,
     width: '90%',
   },
-  logInPageContainer:{
-    width: '95%',
+  incomeExpenseButton: {
+    flex: 1,
+    backgroundColor: '#3b82f6',
+    padding: 15,
+    borderRadius: 12,
     alignItems: 'center',
+    marginBottom: 30,
+    marginHorizontal: 5,
+    borderWidth: 1,
+  },
+  deleteRecordButton: {
+    backgroundColor: '#ef4444',
+    paddingVertical: 15,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginBottom: 10,
+    marginTop: 'auto',
+    width: '90%',
+    borderWidth: 1,
+  },
+  saveRecordButton: {
+    backgroundColor: '#74d836',
+    paddingVertical: 15,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginBottom: 10,
+    width: '90%',
+    borderWidth: 1,
+  },
+  cancelRecordButton: {
+    paddingVertical: 15,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginBottom: 10,
+    width: '90%',
+    borderWidth: 1,
+  },
+  logInPageContainer:{
+    width: '90%',
+    alignItems: 'flex-start',
     justifyContent: 'center',
     marginTop: '50%',
   },
+  rocordPageBottomContainer: {
+    marginTop: 'auto',
+    width: '100%', 
+    alignItems: 'center', 
+    marginBottom: 10,
+  },
   logInPageRow: {
     flexDirection: 'row',
-     alignItems: 'center',
-     width: '90%',
+    alignItems: 'center',
+    width: 'auto',
+  },
+  recordPageRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '90%',
+  },
+  incomeExpenseRow: {
+    justifyContent: 'space-between',
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '90%',
   },
   text: {
 
