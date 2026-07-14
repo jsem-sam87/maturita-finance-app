@@ -276,7 +276,7 @@ export default function App() {
               <View style={styles.recordPageRow}>
                 <Text style={{ color: colors.primary, fontSize: 18 }}>Name:</Text>
                 <TextInput
-                  style={{ color: colors.text, fontSize: 18 }}
+                  style={{ color: colors.text, fontSize: 18, flex: 1 }}
                   placeholder="E.g. Salary, Groceries..."
                   placeholderTextColor={colors.textMuted}
                   value={txTitle} 
@@ -287,7 +287,7 @@ export default function App() {
               <View style={styles.recordPageRow}>
                 <Text style={{ color: colors.primary, fontSize: 18 }}>Amount:</Text>
                 <TextInput 
-                  style={{ color: colors.text, fontSize: 18 }}
+                  style={{ color: colors.text, fontSize: 18, flex: 1 }}
                   placeholder="0" 
                   placeholderTextColor={colors.textMuted}
                   value={txAmount} 
@@ -394,7 +394,7 @@ export default function App() {
         <View style={styles.logInPageRow}>
           <Text style={{ color: colors.primary, fontSize: 18 }}>E-mail:</Text>
           <TextInput
-            style={{ color: colors.text, fontSize: 18  }}
+            style={{ color: colors.text, fontSize: 18, flex: 1 }}
             placeholder="name@email.com"
             placeholderTextColor={colors.textMuted}
             value={email}
@@ -407,7 +407,7 @@ export default function App() {
         <View style={styles.logInPageRow}>
           <Text style={{ color: colors.primary, fontSize: 18 }}>password:</Text>
           <TextInput
-              style={{ color: colors.text, fontSize: 18}}
+              style={{ color: colors.text, fontSize: 18, flex: 1}}
               placeholder="_____"
               placeholderTextColor={colors.textMuted}
               value={password}
