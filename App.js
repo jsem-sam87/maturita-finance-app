@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View, TextInput, Button, Alert, TouchableOpacity, ActivityIndicator, Modal } from 'react-native';
 import { supabase } from './supabase';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function App() {
   const [email, setEmail] = useState('');
@@ -29,6 +30,18 @@ export default function App() {
   const [isDarkMode, setIsDarkMode] = useState(false);
 
   useEffect(() => {
+    const loadTheme = async () => {
+      try {
+        const savedTheme = await AsyncStorage.getItem('userTheme');
+        if (savedTheme !== null) {
+          setIsDarkMode(savedTheme === 'dark');
+        }
+      } catch (e) {
+        console.log('Chyba při načítání motivu:', e);
+      }
+    };
+    loadTheme();
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
     });
@@ -39,6 +52,17 @@ export default function App() {
 
     return () => subscription.unsubscribe();
   }, []);
+
+  useEffect(() => {
+    const saveTheme = async () => {
+      try {
+        await AsyncStorage.setItem('userTheme', isDarkMode ? 'dark' : 'light');
+      } catch (e) {
+        console.log('Chyba při ukládání motivu:', e);
+      }
+    };
+    saveTheme();
+  }, [isDarkMode]);
 
   async function getTransactions() {
     if(!session) return;
