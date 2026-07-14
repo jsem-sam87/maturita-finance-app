@@ -361,19 +361,72 @@ export default function App() {
     {/* --- Transaction history page --- */}
 
         <Modal visible={historyVisible} animationType="slide" transparent={false}>
-          <View style={[styles.container, {backgroundColor: colors.background}]}>
-            <Text style={{ color: colors.text }}>Transaction history:</Text>
+          <View style={[styles.container, {backgroundColor: colors.background, paddingTop: 20}]}>
+            <View style={styles.headerRow}>
+              <Text style={[styles.historyPageTitle, { color: colors.primary }]}>Transaction history:</Text>
+            </View>
 
-            <View>
-              <TouchableOpacity onPress={() => setFilterType('all')}>
-                <Text style={{ color: colors.text }}>All</Text>
+            <View style={styles.historyFilterRow}>
+              {/* --- TLAČÍTKO VŠE --- */}
+              <TouchableOpacity 
+                onPress={() => setFilterType('all')}
+                style={[ 
+                  styles.historyFilterButton, 
+                  {
+                    borderColor: colors.border, 
+                    backgroundColor: filterType === 'all' ? '#3b82f6' : '#00000000'
+                  }
+                ]}
+              >
+                <Text style={{ 
+                  color: filterType === 'all' ? '#ffffff' : colors.text, 
+                  fontSize: 16, 
+                  fontWeight: '600' 
+                }}>
+                  All
+                </Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => setFilterType('income')}>
-                <Text style={{ color: colors.text }}>Incomes</Text>
+
+              {/* --- TLAČÍTKO PŘÍJMY --- */}
+              <TouchableOpacity 
+                onPress={() => setFilterType('income')}
+                style={[ 
+                  styles.historyFilterButton, 
+                  {
+                    borderColor: colors.border, 
+                    backgroundColor: filterType === 'income' ? '#3b82f6' : '#00000000'
+                  }
+                ]}
+              >
+                <Text style={{ 
+                  color: filterType === 'income' ? '#ffffff' : colors.text, 
+                  fontSize: 16, 
+                  fontWeight: '600' 
+                }}>
+                  Incomes
+                </Text>
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => setFilterType('expense')}>
-                <Text style={{ color: colors.text }}>Expenses</Text>
-              </TouchableOpacity>                              
+
+              {/* --- TLAČÍTKO VÝDAJE --- */}
+              <TouchableOpacity 
+                onPress={() => setFilterType('expense')}
+                style={[ 
+                  styles.historyFilterButton, 
+                  {
+                    borderColor: colors.border, 
+                    backgroundColor: filterType === 'expense' ? '#3b82f6' : '#00000000'
+                  }
+                ]}
+              >
+                <Text style={{ 
+                  color: filterType === 'expense' ? '#ffffff' : colors.text, 
+                  fontSize: 16, 
+                  fontWeight: '600' 
+                }}>
+                  Expenses
+                </Text>
+              </TouchableOpacity> 
+
             </View>
 
             {filteredTransactions.length === 0 ? (
@@ -381,9 +434,9 @@ export default function App() {
             ) : (
               filteredTransactions.map((item) =>  (
                 <TouchableOpacity key={item.id} onPress={() => handleOpenEdit(item)}>
-                  <View>
-                    <Text style={{ color: colors.text }}>{item.title}</Text>
-                    <Text style={{ color: colors.text }}>
+                  <View style={styles.historyRecordRow}>
+                    <Text style={{ color: colors.primary, fontSize: 16, paddingHorizontal: 5}}>{item.title}</Text>
+                    <Text style={{ color: colors.text, fontSize: 16, paddingHorizontal: 5}}>
                       {item.type === 'income' ? '+' : '-'}{item.amount} Kč
                     </Text>
                   </View>
@@ -391,8 +444,9 @@ export default function App() {
               ))
             )}
 
-            <TouchableOpacity onPress={() => setHistoryVisible(false)}>
-              <Text style={{ color: colors.text }}>Close history</Text>
+            <TouchableOpacity onPress={() => setHistoryVisible(false)}
+              style={[styles.closeHistoryButton, {borderColor: colors.border }]}>
+              <Text style={{ color: colors.text}}>Close history</Text>
             </TouchableOpacity>
           </View>
         </Modal>
@@ -518,6 +572,10 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
   },
+  historyPageTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
   themeToggle: {
     padding: 5,
   },
@@ -618,6 +676,27 @@ const styles = StyleSheet.create({
     width: '90%',
     borderWidth: 1,
   },
+  historyFilterButton: {
+    flex: 1,
+    backgroundColor: '#3b82f6',
+    padding: 15,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginBottom: 30,
+    marginHorizontal: 5,
+    borderWidth: 1,
+  },
+
+  closeHistoryButton: {
+    paddingVertical: 15,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginBottom: 10,
+    marginTop: 'auto',
+    width: '90%',
+    borderWidth: 1,
+  },
+
   logInPageContainer:{
     width: '90%',
     alignItems: 'flex-start',
@@ -646,8 +725,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '90%',
   },
+  historyFilterRow: {
+    justifyContent: 'space-between',
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '90%',
+  },
+  historyRecordRow: {
+    justifyContent: 'space-between',
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '90%',
+  },
   text: {
 
   }
 
 });
+
+/*
+pridat scrollview pro historii
+*/
