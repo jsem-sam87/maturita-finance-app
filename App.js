@@ -646,6 +646,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     marginBottom: 30,
+    marginTop: 15,
     marginHorizontal: 5,
     borderWidth: 1,
   },
@@ -737,10 +738,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '90%',
   },
-  text: {
-
-  }
-
 });
 
 /*
