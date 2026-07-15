@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, TextInput, Button, Alert, TouchableOpacity, ActivityIndicator, Modal } from 'react-native';
+import { StyleSheet, Text, View, TextInput, Button, Alert, TouchableOpacity, ActivityIndicator, Modal, ScrollView } from 'react-native';
 import { supabase } from './supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -84,7 +84,7 @@ export default function App() {
           if (item.type == 'income') totalbalance += Number(item.amount);
           if (item.type == 'expense') totalbalance -= Number(item.amount);
         });
-        setBalance(totalbalance);
+        setBalance(parseFloat(totalbalance.toFixed(2)));
       }
   }
   
@@ -428,21 +428,27 @@ export default function App() {
               </TouchableOpacity> 
 
             </View>
-
-            {filteredTransactions.length === 0 ? (
-              <Text style={{ color: colors.text }}>You don't have any records with this filter here yet.</Text>
-            ) : (
-              filteredTransactions.map((item) =>  (
-                <TouchableOpacity key={item.id} onPress={() => handleOpenEdit(item)}>
-                  <View style={styles.historyRecordRow}>
-                    <Text style={{ color: colors.primary, fontSize: 16, paddingHorizontal: 5}}>{item.title}</Text>
-                    <Text style={{ color: colors.text, fontSize: 16, paddingHorizontal: 5}}>
-                      {item.type === 'income' ? '+' : '-'}{item.amount} Kč
-                    </Text>
-                  </View>
-                </TouchableOpacity>
-              ))
-            )}
+            
+            <ScrollView
+            style={styles.historyScrollView}
+            contentContainerStyle={styles.historyScrollContent}
+            showsVerticalScrollIndicator={true}
+            >
+              {filteredTransactions.length === 0 ? (
+                <Text style={{ color: colors.text }}>You don't have any records with this filter here yet.</Text>
+              ) : (
+                filteredTransactions.map((item) =>  (
+                  <TouchableOpacity key={item.id} onPress={() => handleOpenEdit(item)}>
+                    <View style={styles.historyRecordRow}>
+                      <Text style={{ color: colors.primary, fontSize: 16, paddingHorizontal: 5}}>{item.title}</Text>
+                      <Text style={{ color: colors.text, fontSize: 16, paddingHorizontal: 5}}>
+                        {item.type === 'income' ? '+' : '-'}{item.amount} Kč
+                      </Text>
+                    </View>
+                  </TouchableOpacity>
+                ))
+              )}
+            </ScrollView>
 
             <TouchableOpacity onPress={() => setHistoryVisible(false)}
               style={[styles.closeHistoryButton, {borderColor: colors.border }]}>
@@ -693,7 +699,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     marginBottom: 10,
-    marginTop: 'auto',
+    marginTop: 20,
     width: '90%',
     borderWidth: 1,
   },
@@ -738,8 +744,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '90%',
   },
+  historyScrollView: {
+    flex: 1,
+    width: '100%',
+  },
+  historyScrollContent: {
+    alignItems: 'center',
+    paddingBottom: 20,
+  },
 });
-
-/*
-pridat scrollview pro historii
-*/
