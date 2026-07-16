@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, TextInput, Button, Alert, TouchableOpacity, ActivityIndicator, Modal, ScrollView } from 'react-native';
+import { StyleSheet, Text, View, TextInput, Button, Alert, TouchableOpacity, ActivityIndicator, Modal, ScrollView, Settings } from 'react-native';
 import { supabase } from './supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -25,6 +25,7 @@ export default function App() {
 
   const [filterType, setFilterType] = useState('all'); // 'all', 'income', 'expense'
 
+  const [settingsVisible, setSettingsVisible] = useState(false); 
 
   // dark mode
   const [isDarkMode, setIsDarkMode] = useState(false);
@@ -200,6 +201,40 @@ export default function App() {
     await supabase.auth.signOut();
   }
 
+  async function handleDeleteAccount() {
+    Alert.alert(
+      "Delete account and data",
+      "Are you sure u want to delelte yout account with all your data? this action can be undone!",
+      [
+        { text: "Cancel" },
+        { 
+          text: "Delete Account", 
+          onPress: async () => {
+            try {
+              setLoading(true);
+
+              const { error } = await supabase.rpc('delete_user_account');
+
+              if (error) {
+                throw new Error("Error deleting account: " + error.message);
+              }
+
+              await supabase.auth.signOut();
+              
+              setSettingsVisible(false);
+              
+              Alert.alert("Account deleted", "Your account and all your data was deleted");
+            } catch (error) {
+              Alert.alert("Error", error.message);
+            } finally {
+              setLoading(false);
+            }
+          } 
+        }
+      ]
+    );
+  }
+
   function handleOpenEdit(item) {
     setEditingId(item.id);
     setTxTitle(item.title);
@@ -258,12 +293,18 @@ export default function App() {
         <View style={styles.headerRow}>
           <Text style={[styles.mainPageTitle, { color: colors.primary }]}>Main page</Text>
           
-          <TouchableOpacity 
+          {/* <TouchableOpacity 
             style={styles.themeToggle}
             onPress={() => setIsDarkMode(!isDarkMode)}
           >
             <Text style={{ fontSize: 24 }}>{isDarkMode ? '☀️' : '🌙'}</Text>
-          </TouchableOpacity>          
+          </TouchableOpacity>  */}
+          <TouchableOpacity 
+            onPress={() => setSettingsVisible(true)}
+          >
+            <Text style={{ fontSize: 24, color: colors.text }}>⚙️</Text>
+          </TouchableOpacity>
+
       </View>
       <View style={styles.contentContainer}>
         <Text style={{ color: colors.text }}>Welcome {session.user.email}</Text>
@@ -285,9 +326,9 @@ export default function App() {
           </TouchableOpacity>
         </View>
       </View>  
-      <TouchableOpacity style={[ styles.signOutButton, {borderColor: colors.border}]} onPress={handleSignOut}>
+      {/* <TouchableOpacity style={[ styles.signOutButton, {borderColor: colors.border}]} onPress={handleSignOut}>
         <Text style={{ color: colors.text, fontWeight: '600',}}>Sign Out</Text>
-      </TouchableOpacity>
+      </TouchableOpacity> */}
 
     {/* --- Add record page --- */}
 
@@ -456,6 +497,66 @@ export default function App() {
             </TouchableOpacity>
           </View>
         </Modal>
+        
+      {/* --- Settings page --- */}
+        <Modal visible={settingsVisible} animationType="slide" transparent={false}>
+          <View style={[styles.container, { backgroundColor: colors.background, paddingTop: 20}]}>
+            <View style={styles.headerRow}>
+              <Text style={[styles.settingsPageTitle, { color: colors.primary}]}>
+                Settings
+              </Text>
+            </View>
+
+            <View style={styles.settingsContent}>
+      
+            <View style={[styles.settingsRow, { borderColor: colors.border, borderColor: colors.border }]}>
+              <Text style={{ paddingHorizontal: 10, color: colors.text, fontSize: 18 }}>Theme:</Text>
+              <TouchableOpacity 
+                style={styles.themeToggle}
+                onPress={() => setIsDarkMode(!isDarkMode)}
+              >
+                <Text style={{ fontSize: 24, color: colors.text }}>{isDarkMode ? 'Light ☀️' : 'Dark 🌙'}</Text>
+              </TouchableOpacity> 
+            </View>
+
+
+          </View>
+
+            <View style={styles.settingsActions}>
+              
+              <TouchableOpacity 
+                onPress={() => {
+                  setSettingsVisible(false);
+                  handleSignOut();
+                }}
+                style={[styles.settingsActionButton, { borderColor: colors.border, backgroundColor: '#ef4444' }]}
+              >
+                <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600' }}>
+                  Sign Out
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                onPress={handleDeleteAccount}
+                style={[styles.settingsActionButton, { borderColor: colors.border}]}
+              >
+                <Text style={{ color: '#ef4444', fontSize: 16, fontWeight: '600' }}>
+                  Delete Account
+                </Text>
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                onPress={() => setSettingsVisible(false)}
+                style={[styles.settingsActionButton, { borderColor: colors.border }]}
+              >
+                <Text style={{ color: colors.text, fontWeight: '600', fontSize: 16 }}>
+                  Close Settings
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+          </View>
+        </Modal>
 
       </View>
     )
@@ -582,8 +683,13 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
   },
+  settingsPageTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+  },  
   themeToggle: {
     padding: 5,
+
   },
   balanceCard: {
     width: '90%',
@@ -704,6 +810,16 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
 
+    closeSettingsButton: {
+    paddingVertical: 15,
+    borderRadius: 12,
+    alignItems: 'center',
+    marginBottom: 10,
+    marginTop: 20,
+    width: '90%',
+    borderWidth: 1,
+  },
+
   logInPageContainer:{
     width: '90%',
     alignItems: 'flex-start',
@@ -751,5 +867,30 @@ const styles = StyleSheet.create({
   historyScrollContent: {
     alignItems: 'center',
     paddingBottom: 20,
+  },
+
+  settingsContent: {
+    width: '90%',
+  },
+  settingsRow: {
+    justifyContent: 'space-between',
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderRadius: 12,
+  },
+  settingsActions: {
+    width: '90%',
+    margin: 5,
+    marginTop: 'auto',
+  },
+  settingsActionButton: {
+    width: '100%',
+    padding: 15,
+    borderWidth: 1,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    margin: 5,
   },
 });
