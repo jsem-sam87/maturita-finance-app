@@ -4,6 +4,24 @@ import { StyleSheet, Text, View, TextInput, Button, Alert, TouchableOpacity, Act
 import { supabase } from './supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
+//fixni kurzy k 1czk
+const EXCHANGE_RATES = {
+  CZK: 1.0,
+  EUR: 0.040,
+  USD: 0.044,
+};
+function convertCurrency(amount, fromCurrency, toCurrency) {
+  if (!fromCurrency || !toCurrency) return amount;
+  const from = fromCurrency.toUpperCase();
+  const to = toCurrency.toUpperCase();
+  
+  if (from === to) return amount;
+  
+  // prevod na czk a pak na cilovou menu
+  const amountInCZK = amount / EXCHANGE_RATES[from];
+  return amountInCZK * EXCHANGE_RATES[to];
+}
+
 export default function App() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -30,18 +48,29 @@ export default function App() {
   // dark mode
   const [isDarkMode, setIsDarkMode] = useState(false);
 
+  // Stavy pro meny
+  const [defaultCurrency, setDefaultCurrency] = useState('CZK'); // vychozi mena
+  const [txCurrency, setTxCurrency] = useState('CZK'); //mena prave zadane transakce
+
+  const [defaultCurrencyModalVisible, setDefaultCurrencyModalVisible] = useState(false);
+  const [txCurrencyModalVisible, setTxCurrencyModalVisible] = useState(false);
+
   useEffect(() => {
-    const loadTheme = async () => {
+    const loadSettings = async () => {
       try {
         const savedTheme = await AsyncStorage.getItem('userTheme');
-        if (savedTheme !== null) {
-          setIsDarkMode(savedTheme === 'dark');
-        }
+        if (savedTheme !== null) setIsDarkMode(savedTheme === 'dark');
+        
+        const savedCurrency = await AsyncStorage.getItem('defaultCurrency');
+        if (savedCurrency !== null) {
+          setDefaultCurrency(savedCurrency);
+          setTxCurrency(savedCurrency); 
+        };
       } catch (e) {
-        console.log('Chyba při načítání motivu:', e);
+        console.log('Error', e);
       }
     };
-    loadTheme();
+    loadSettings();
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -65,6 +94,21 @@ export default function App() {
     saveTheme();
   }, [isDarkMode]);
 
+  useEffect(() => {
+  if (!session) return; 
+
+    const saveCurrency = async () => {
+      try {
+        await AsyncStorage.setItem('defaultCurrency', defaultCurrency);
+        // setTxCurrency(defaultCurrency);
+        getTransactions();
+      } catch (e) {
+        console.log('Error saving default currency:', e);
+      }
+    };
+    saveCurrency();
+  }, [defaultCurrency, session]);
+
   async function getTransactions() {
     if(!session) return;
 
@@ -82,8 +126,13 @@ export default function App() {
         // spocitani zustatku
         let totalbalance = 0;
         data.forEach(item => {
-          if (item.type == 'income') totalbalance += Number(item.amount);
-          if (item.type == 'expense') totalbalance -= Number(item.amount);
+          // zjisteni meny transakce
+          const itemCurrency = item.currency || 'CZK';
+          // prepocitani castky do vychozi meny
+          const convertedAmount = convertCurrency(Number(item.amount), itemCurrency, defaultCurrency);
+
+          if (item.type == 'income') totalbalance += convertedAmount;
+          if (item.type == 'expense') totalbalance -= convertedAmount;
         });
         setBalance(parseFloat(totalbalance.toFixed(2)));
       }
@@ -94,7 +143,7 @@ export default function App() {
     if (session) {
       getTransactions();
     }
-  }, [session]);
+  }, [session, defaultCurrency]);
 
   async function handleAddTransaction() {
     if (!txTitle || !txAmount) {
@@ -116,7 +165,8 @@ export default function App() {
         .update({
           title: txTitle,
           amount: finalAmount,
-          type: txType
+          type: txType,
+          currency: txCurrency
         })
         .eq('id', editingId);
 
@@ -133,6 +183,7 @@ export default function App() {
             title: txTitle, 
             amount: finalAmount, 
             type: txType,
+            currency: txCurrency,
             user_id: session.user.id // propojeni s prihlasenym uzivatelem
           }
         ]);
@@ -145,6 +196,7 @@ export default function App() {
 
     setTxTitle('');
     setTxAmount('');
+    setTxCurrency(defaultCurrency);
     setEditingId(null);
     setModalVisible(false);
     getTransactions(); //prepocteni zustatku
@@ -204,7 +256,7 @@ export default function App() {
   async function handleDeleteAccount() {
     Alert.alert(
       "Delete account and data",
-      "Are you sure u want to delelte yout account with all your data? this action can be undone!",
+      "Are you sure u want to delelte yout account with all your data? This action can't be undone!",
       [
         { text: "Cancel" },
         { 
@@ -239,6 +291,7 @@ export default function App() {
     setEditingId(item.id);
     setTxTitle(item.title);
     setTxAmount(item.amount.toString());
+    setTxCurrency(item.currency || 'CZK');
     txType === item.type;
     setHistoryVisible(false);
     setModalVisible(true);
@@ -313,7 +366,7 @@ export default function App() {
               CURRENT BALANCE:
           </Text>
           <Text style={{ color: colors.primary, fontSize: 36, fontWeight: '800', marginTop: 10 }}>
-              {balance} Kč
+              {balance} {defaultCurrency}
           </Text>
         </View>
         <View style={styles.actionsRow}>
@@ -359,6 +412,59 @@ export default function App() {
                   onChangeText={setTxAmount}
                   keyboardType="numeric"
                 />
+                {/* tlacitko pro vyber meny*/}
+                <TouchableOpacity
+                  onPress={() => setTxCurrencyModalVisible(true)}
+                  style={[styles.txCurrencyDropdownTrigger, { borderColor: colors.border }]}
+                >
+                  <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600', marginRight: 5 }}>
+                    {txCurrency}
+                  </Text>
+                  <Text style={{ color: colors.text, fontSize: 10 }}>▼</Text>
+                </TouchableOpacity>
+
+                {/*  MODAL/DROPDOWN PRO vyber meny transakce*/}
+                <Modal
+                  visible={txCurrencyModalVisible}
+                  transparent={true}
+                  animationType="fade"
+                  onRequestClose={() => setTxCurrencyModalVisible(false)}
+                >
+                  <TouchableOpacity 
+                    style={styles.dropdownOverlay} 
+                    activeOpacity={1} 
+                    onPress={() => setTxCurrencyModalVisible(false)}
+                  >
+                    <View style={[styles.dropdownMenu, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                      <Text style={[styles.dropdownTitle, { color: colors.primary }]}>Select Currency</Text>
+                      {['CZK', 'EUR', 'USD'].map((curr) => (
+                        <TouchableOpacity
+                          key={curr}
+                          style={[
+                            styles.dropdownOption,
+                            { 
+                              backgroundColor: txCurrency === curr ? '#3b82f6' : 'transparent',
+                              borderBottomColor: colors.border
+                            }
+                          ]}
+                          onPress={() => {
+                            setTxCurrency(curr);
+                            setTxCurrencyModalVisible(false);
+                          }}
+                        >
+                          <Text style={{ 
+                            color: txCurrency === curr ? '#fff' : colors.text, 
+                            fontSize: 16, 
+                            fontWeight: '600' 
+                          }}>
+                            {curr}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  </TouchableOpacity>
+                </Modal>
+                
               </View>  
 
               {/* <Text style={{ color: colors.text }}>Transaction type:</Text> */}
@@ -483,7 +589,7 @@ export default function App() {
                     <View style={styles.historyRecordRow}>
                       <Text style={{ color: colors.primary, fontSize: 16, paddingHorizontal: 5}}>{item.title}</Text>
                       <Text style={{ color: colors.text, fontSize: 16, paddingHorizontal: 5}}>
-                        {item.type === 'income' ? '+' : '-'}{item.amount} Kč
+                        {item.type === 'income' ? '+' : '-'}{item.amount} {item.currency || 'CZK'}
                       </Text>
                     </View>
                   </TouchableOpacity>
@@ -508,14 +614,71 @@ export default function App() {
             </View>
 
             <View style={styles.settingsContent}>
-      
+            {/* vychozi mena */}
+              <View style={[styles.settingsRow, { borderColor: colors.border }]}>
+              <Text style={{ color: colors.text, fontSize: 18, paddingHorizontal: 10}}>Default Currency:</Text>
+              <TouchableOpacity
+                onPress={() => setDefaultCurrencyModalVisible(true)}
+                style={[styles.dropdownTrigger, { borderColor: colors.border }]}
+              >
+                <Text style={{ color: colors.text, fontSize: 16, fontWeight: '600', marginRight: 8 }}>
+                  {defaultCurrency}
+                </Text>
+                <Text style={{ color: colors.text, fontSize: 12 }}>▼</Text>
+              </TouchableOpacity>
+            </View>
+
+            {/* MODAL/DROPDOWN PRO vyber dafeult meny */}
+            <Modal
+              visible={defaultCurrencyModalVisible}
+              transparent={true}
+              animationType="fade"
+              onRequestClose={() => setDefaultCurrencyModalVisible(false)}
+            >
+              <TouchableOpacity 
+                style={styles.dropdownOverlay} 
+                activeOpacity={1} 
+                onPress={() => setDefaultCurrencyModalVisible(false)}
+              >
+                <View style={[styles.dropdownMenu, { backgroundColor: colors.background, borderColor: colors.border }]}>
+                  <Text style={[styles.dropdownTitle, { color: colors.primary,  }]}>Select Default Currency</Text>
+                  {['CZK', 'EUR', 'USD'].map((curr) => (
+                    <TouchableOpacity
+                      key={curr}
+                      style={[
+                        styles.dropdownOption,
+                        { 
+                          backgroundColor: defaultCurrency === curr ? '#3b82f6' : 'transparent',
+                          borderBottomColor: colors.border
+                        }
+                      ]}
+                      onPress={() => {
+                        setDefaultCurrency(curr);
+                        setTxCurrency(curr);
+                        setDefaultCurrencyModalVisible(false);
+                      }}
+                    >
+                      <Text style={{ 
+                        color: defaultCurrency === curr ? '#fff' : colors.text, 
+                        fontSize: 16, 
+                        fontWeight: '600' 
+                      }}>
+                        {curr}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              </TouchableOpacity>
+            </Modal>
+
+            {/* light/dark mode */}
             <View style={[styles.settingsRow, { borderColor: colors.border, borderColor: colors.border }]}>
               <Text style={{ paddingHorizontal: 10, color: colors.text, fontSize: 18 }}>Theme:</Text>
               <TouchableOpacity 
                 style={styles.themeToggle}
                 onPress={() => setIsDarkMode(!isDarkMode)}
               >
-                <Text style={{ fontSize: 24, color: colors.text }}>{isDarkMode ? 'Light ☀️' : 'Dark 🌙'}</Text>
+                <Text style={{ fontSize: 24, color: colors.text, margin: 5 }}>{isDarkMode ? 'Light ☀️' : 'Dark 🌙'}</Text>
               </TouchableOpacity> 
             </View>
 
@@ -878,6 +1041,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderWidth: 1,
     borderRadius: 12,
+    marginVertical: 5,
   },
   settingsActions: {
     width: '90%',
@@ -892,5 +1056,60 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     margin: 5,
+  },
+
+  dropdownTrigger: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    borderWidth: 1,
+    borderRadius: 8,
+    minWidth: 90,
+    margin: 5,
+  },
+  
+  dropdownOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  dropdownMenu: {
+    width: '80%',
+    borderRadius: 15,
+    borderWidth: 1,
+    padding: 15,
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.5,
+  },
+  dropdownTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  
+  dropdownOption: {
+    paddingVertical: 12,
+    paddingHorizontal: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+    borderBottomWidth: 0.5,
+  },
+  txCurrencyDropdownTrigger: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderRadius: 8,
+    marginLeft: 10,
+    minWidth: 75,
   },
 });
