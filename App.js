@@ -55,6 +55,15 @@ export default function App() {
   const [defaultCurrencyModalVisible, setDefaultCurrencyModalVisible] = useState(false);
   const [txCurrencyModalVisible, setTxCurrencyModalVisible] = useState(false);
 
+  //stavy pro kategorie
+  const [userCategories, setUserCategories] = useState([]); // ulozeni kategorie z databaze
+  const [txCategoryName, setTxCategoryName] = useState('Default'); // nazev kategorie pro novou transakci
+  const [txCategoryIcon, setTxCategoryIcon] = useState('📦'); // ikona pro novou transakci
+  const [newCatName, setNewCatName] = useState('');
+  const [newCatIcon, setNewCatIcon] = useState('');
+
+  const [editingCategoryId, setEditingCategoryId] = useState(null); // ID kategorie, kterou upravujeme
+
   useEffect(() => {
     const loadSettings = async () => {
       try {
@@ -71,6 +80,7 @@ export default function App() {
       }
     };
     loadSettings();
+    getCategories();
 
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
@@ -137,11 +147,119 @@ export default function App() {
         setBalance(parseFloat(totalbalance.toFixed(2)));
       }
   }
-  
+
+  //ziskani dat kategorii uzivatele z databaze
+async function getCategories() {
+  if (!session) return;
+  const { data, error } = await supabase
+    .from('categories')
+    .select('*')
+    .eq('user_id', session.user.id)
+    .order('created_at', { ascending: true });
+
+  if (error) {
+    console.log('Error loading categories', error.message);
+  } else {
+    // pridani default kategorie
+    const defaultCat = { id: 'default', name: 'Default', icon: '📦' };
+    setUserCategories([defaultCat, ...data]);
+  }
+}
+
+// vytvoreni nove kategorie uzivatelem
+async function handleCreateCategory(name, icon) {
+  if (!name.trim()) return;
+  const { error } = await supabase
+    .from('categories')
+    .insert([{ name: name, icon: icon || '💰' }]);
+
+  if (error) {
+    Alert.alert("Error creating category", error.message);
+  } else {
+    getCategories(); 
+  }
+}
+
+function handleLongPressCategory(cat) {
+  if (cat.id === 'default') return; //default nelze smazat
+  setEditingCategoryId(cat.id);
+  setNewCatName(cat.name);
+  setNewCatIcon(cat.icon);
+}
+
+async function updateCategoryInDb(id, name, icon) {
+  if (!session) return;
+
+  const oldCat = userCategories.find(c => c.id === id);
+  if (!oldCat) return;
+
+  const { error: catError } = await supabase
+    .from('categories')
+    .update({ name: name, icon: icon })
+    .eq('id', id)
+    .eq('user_id', session.user.id); 
+
+  if (catError) {
+    Alert.alert("Error", catError.message);
+    return;
+  }
+
+  await supabase
+    .from('transactions')
+    .update({ category_name: name, category_icon: icon })
+    .eq('category_name', oldCat.name)
+    .eq('user_id', session.user.id);
+
+  getCategories(); 
+  getTransactions(); 
+}
+
+async function deleteCategory(id) {
+  if (!session) return;
+
+  const catToDelete = userCategories.find(c => c.id === id);
+  if (!catToDelete) return;
+
+  Alert.alert(
+    "Delete Category",
+    "Are you sure? All transactions with this category will change to 'Default'.",
+    [
+      { text: "Cancel", style: "cancel" },
+      { 
+        text: "Delete", 
+        style: "destructive",
+        onPress: async () => {
+          const { error: deleteError } = await supabase
+            .from('categories')
+            .delete()
+            .eq('id', id)
+            .eq('user_id', session.user.id);
+
+          if (deleteError) {
+            Alert.alert("Error", deleteError.message);
+            return;
+          }
+
+          await supabase
+            .from('transactions')
+            .update({ category_name: 'Default', category_icon: '📦' })
+            .eq('category_name', catToDelete.name)
+            .eq('user_id', session.user.id);
+
+          setTxCategoryName('Default');
+          setTxCategoryIcon('📦');
+          getCategories();  
+          getTransactions();
+        }
+      }
+    ]
+  );
+}
   //okamzite nacteni dat po prihlaseni uzivatele
   useEffect(() => {
     if (session) {
       getTransactions();
+      getCategories()
     }
   }, [session, defaultCurrency]);
 
@@ -166,6 +284,8 @@ export default function App() {
           title: txTitle,
           amount: finalAmount,
           type: txType,
+          category_name: txCategoryName,
+          category_icon: txCategoryIcon,
           currency: txCurrency
         })
         .eq('id', editingId);
@@ -184,6 +304,8 @@ export default function App() {
             amount: finalAmount, 
             type: txType,
             currency: txCurrency,
+            category_name: txCategoryName,
+            category_icon: txCategoryIcon,
             user_id: session.user.id // propojeni s prihlasenym uzivatelem
           }
         ]);
@@ -197,6 +319,8 @@ export default function App() {
     setTxTitle('');
     setTxAmount('');
     setTxCurrency(defaultCurrency);
+    setTxCategoryName('Default');
+    setTxCategoryIcon('📦');
     setEditingId(null);
     setModalVisible(false);
     getTransactions(); //prepocteni zustatku
@@ -293,6 +417,8 @@ export default function App() {
     setTxAmount(item.amount.toString());
     setTxCurrency(item.currency || 'CZK');
     txType === item.type;
+    setTxCategoryName(item.category_name || 'Default');
+    setTxCategoryIcon(item.category_icon || '📦');
     setHistoryVisible(false);
     setModalVisible(true);
   }
@@ -483,6 +609,107 @@ export default function App() {
                   <Text style={{ color: colors.text, fontSize: 18 }}>Expense</Text>
                 </TouchableOpacity>
               </View>
+                <View style={styles.categoriesSectionContainer}>
+
+                  <Text style={{ color: colors.primary, fontSize: 18, marginBottom: 5 }}>
+                    Categories:
+                  </Text>
+                  
+                  <ScrollView 
+                    horizontal 
+                    showsHorizontalScrollIndicator={false} 
+                    style={styles.categoriesScroll}
+                  >
+                    {userCategories.map((cat, index) => (
+                      <TouchableOpacity
+                        key={index}
+                        onPress={() => {
+                          setTxCategoryName(cat.name);
+                          setTxCategoryIcon(cat.icon);
+                        }}
+                        onLongPress={() => handleLongPressCategory(cat)}
+                        delayLongPress={500}
+                        style={[
+                          styles.categoryBadge,
+                          { borderColor: colors.border, backgroundColor: txCategoryName === cat.name ? '#3b82f6' : 'transparent' }
+                        ]}
+                      >
+                        <Text style={styles.categoryBadgeIcon}>{cat.icon}</Text>
+                        <Text 
+                          style={[
+                            styles.categoryBadgeText, 
+                            { color: txCategoryName === cat.name ? '#fff' : colors.text }
+                          ]}
+                        >
+                          {cat.name}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+
+                  <View style={styles.addCategoryRow}>
+                    <TextInput
+                      placeholder="💰"
+                      placeholderTextColor="#888"
+                      maxLength={2}
+                      value={newCatIcon}
+                      onChangeText={setNewCatIcon}
+                      style={[styles.iconInput, { color: colors.text, backgroundColor: colors.card, borderColor: colors.border }]}
+                    />
+                    <TextInput
+                      placeholder="new category..."
+                      placeholderTextColor="#888"
+                      value={newCatName}
+                      onChangeText={setNewCatName}
+                      style={[styles.nameInput, { color: colors.text, backgroundColor: colors.card, borderColor: colors.border }]}
+                    />
+                    <TouchableOpacity
+                      onPress={() => {
+                        if (newCatName.trim()) {
+                          if (editingCategoryId) {
+                            updateCategoryInDb(editingCategoryId, newCatName, newCatIcon || '💰');
+                          } else {
+                            handleCreateCategory(newCatName, newCatIcon || '💰');
+                          }
+                          setNewCatName('');
+                          setNewCatIcon('');
+                          setEditingCategoryId(null);
+                        }
+                      }}
+                      style={[
+                        styles.addCategoryButton, 
+                        { backgroundColor: editingCategoryId ? '#f59e0b' : '#10b981' }
+                      ]}
+                    >
+                      <Text style={styles.addCategoryButtonText}>
+                        {editingCategoryId ? 'Edit' : 'Add'}
+                      </Text>
+                    </TouchableOpacity>
+
+                    {editingCategoryId && (
+                      <TouchableOpacity
+                        onPress={() => {
+                          deleteCategory(editingCategoryId);
+                          setNewCatName('');
+                          setNewCatIcon('');
+                          setEditingCategoryId(null); 
+                        }}
+                        style={{
+                          backgroundColor: '#ef4444',
+                          paddingHorizontal: 12,
+                          height: 38,
+                          borderRadius: 8,
+                          justifyContent: 'center',
+                          alignItems: 'center',
+                          marginLeft: 6
+                        }}
+                      >
+                        <Text style={{ color: '#fff', fontWeight: 'bold', fontSize: 14 }}>Delete</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
+
+                </View>
             </View>
 
             <View style={styles.rocordPageBottomContainer}>
@@ -1111,5 +1338,71 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginLeft: 10,
     minWidth: 75,
+  },
+categoriesSectionContainer: {
+    flexDirection: 'column',
+    width: '90%',
+    marginTop: 10,
+    marginBottom: 5,
+  },
+  categoriesScroll: {
+    flexDirection: 'row',
+    marginBottom: 8,
+    marginTop: 2,
+  },
+  categoryBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    marginRight: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  categoryBadgeIcon: {
+    marginRight: 4,
+    fontSize: 14,
+  },
+  categoryBadgeText: {
+    fontWeight: '600',
+    fontSize: 14,
+  },
+  addCategoryRow: {
+    flexDirection: 'row',      // Pouze inputy a tlačítko vedle sebe
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    width: '100%',             
+    marginTop: 5,
+  },
+  iconInput: {
+    width: 50,
+    height: 50,
+    borderWidth: 1,
+    borderRadius: 8,
+    textAlign: 'center',
+    marginRight: 6,
+    fontSize: 16,
+  },
+  nameInput: {
+    flex: 1,
+    height: 50,
+    borderWidth: 1,
+    borderRadius: 8,
+    paddingHorizontal: 10,
+    marginRight: 6,
+    fontSize: 14,
+  },
+  addCategoryButton: {
+    backgroundColor: '#10b981',
+    paddingHorizontal: 14,
+    height: 50,
+    borderRadius: 8,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  addCategoryButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 14,
   },
 });
