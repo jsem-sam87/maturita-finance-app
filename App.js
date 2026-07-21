@@ -3,6 +3,8 @@ import { StatusBar } from 'expo-status-bar';
 import { StyleSheet, Text, View, TextInput, Button, Alert, TouchableOpacity, ActivityIndicator, Modal, ScrollView, Settings } from 'react-native';
 import { supabase } from './supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { Platform } from 'react-native';
 
 //fixni kurzy k 1czk
 const EXCHANGE_RATES = {
@@ -66,6 +68,12 @@ export default function App() {
 
   // Výchozi hodnota 'all' zoberazi vsechny kategorie
   const [filterCategory, setFilterCategory] = useState('all');
+
+  const [selectedMonthFilter, setSelectedMonthFilter] = useState('all');
+
+  //stavy pro datum
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   useEffect(() => {
     const loadSettings = async () => {
@@ -279,6 +287,8 @@ async function deleteCategory(id) {
       return;
     }
 
+    const dateToSave = selectedDate ? selectedDate.toISOString() : new Date().toISOString();
+
     if (editingId) {
       // rezim upravty zaznamu
       const { error } = await supabase
@@ -289,7 +299,8 @@ async function deleteCategory(id) {
           type: txType,
           category_name: txCategoryName,
           category_icon: txCategoryIcon,
-          currency: txCurrency
+          currency: txCurrency,
+          created_at: dateToSave,
         })
         .eq('id', editingId);
 
@@ -309,7 +320,7 @@ async function deleteCategory(id) {
             currency: txCurrency,
             category_name: txCategoryName,
             category_icon: txCategoryIcon,
-            user_id: session.user.id // propojeni s prihlasenym uzivatelem
+            created_at: dateToSave
           }
         ]);
 
@@ -324,6 +335,7 @@ async function deleteCategory(id) {
     setTxCurrency(defaultCurrency);
     setTxCategoryName('Default');
     setTxCategoryIcon('📦');
+    setSelectedDate(new Date());
     setEditingId(null);
     setModalVisible(false);
     getTransactions(); //prepocteni zustatku
@@ -422,6 +434,9 @@ async function deleteCategory(id) {
     txType === item.type;
     setTxCategoryName(item.category_name || 'Default');
     setTxCategoryIcon(item.category_icon || '📦');
+
+    setSelectedDate(item.created_at ? new Date(item.created_at) : new Date());
+
     setHistoryVisible(false);
     setModalVisible(true);
   }
@@ -458,12 +473,76 @@ async function deleteCategory(id) {
     );
   }
 
+  const handleOpenAdd = () => {
+    setEditingId(null);
+    setTxTitle('');
+    setTxAmount('');
+    setTxCurrency(defaultCurrency);
+    setTxCategoryName('Default');
+    setTxCategoryIcon('📦');
+    setSelectedDate(new Date())
+    setModalVisible(true);
+  };
+
+  const availableMonths = getAvailableMonths(transactions, 'en');
+
   const filteredTransactions = transactions.filter(tx => {
     const matchesType = filterType === 'all' || tx.type === filterType;
     const matchesCategory = filterCategory === 'all' || tx.category_name === filterCategory;
+    const itemMonth = formatMonthYear(tx.created_at, 'en');
+    const matchesMonth = selectedMonthFilter === 'all' || itemMonth === selectedMonthFilter;
 
-    return matchesType && matchesCategory;
+    return matchesType && matchesCategory && matchesMonth;
+  }).sort((a, b) => {
+    const dateA = new Date(a.created_at).getTime();
+    const dateB = new Date(b.created_at).getTime();
+
+    if (dateB !== dateA) {
+      return dateB - dateA;
+    }
+    return b.id - a.id;
   });
+
+  function formatMonthYear(dateString, lang = 'en') {
+    if (!dateString) return '';
+    const d = new Date(dateString);
+    
+    const formatted = d.toLocaleString(lang, { month: 'long', year: 'numeric' });
+    
+    return formatted.charAt(0).toUpperCase() + formatted.slice(1);
+  }
+
+  function getAvailableMonths(transactionsList, lang = 'en') {
+    const monthsSet = new Set();
+
+    const sorted = [...transactionsList].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    
+    sorted.forEach(tx => {
+      if (tx.created_at) {
+        monthsSet.add(formatMonthYear(tx.created_at, lang));
+      }
+    });
+
+    return Array.from(monthsSet);
+  }
+
+const handleDateChange = (event, selectedDateFromPicker) => {
+  // Na Androidu zavřeme picker po výběru/zrušení
+  if (Platform.OS === 'android') {
+    setShowDatePicker(false);
+  }
+
+  // Pokud uživatel potvrdil výběr (stiskl OK)
+  if (event.type === 'set' && selectedDateFromPicker) {
+    setSelectedDate(selectedDateFromPicker);
+  }
+
+  // Na iOS se zavírá ručně, pokud nepoužíváš inline režim
+  if (Platform.OS === 'ios') {
+    setShowDatePicker(false);
+  }
+};
+
 
   const colors = isDarkMode ? theme.dark : theme.light;
 
@@ -501,7 +580,7 @@ async function deleteCategory(id) {
           </Text>
         </View>
         <View style={styles.actionsRow}>
-          <TouchableOpacity style={styles.primaryButton} onPress={() => setModalVisible(true)}>
+          <TouchableOpacity style={styles.primaryButton} onPress={handleOpenAdd}>
             <Text style={styles.primaryButtonText}>+ Add record</Text>
           </TouchableOpacity>
 
@@ -713,8 +792,30 @@ async function deleteCategory(id) {
                       </TouchableOpacity>
                     )}
                   </View>
+                    <Text style={{ color: colors.primary, fontSize: 18, marginTop: 5 }}>
+                    Date: 
+                  </Text>
+                    <TouchableOpacity 
+                      onPress={() => setShowDatePicker(true)}
+                      style={[styles.categoryBadge, { borderColor: colors.border, marginTop: 10, alignSelf: 'flex-start' }]}
+                    >
+                      <Text style={styles.categoryBadgeIcon}>📅</Text>
+                      <Text style={[styles.categoryBadgeText, { color: colors.text }]}>
+                        {selectedDate.toLocaleDateString('cs-CZ')}
+                      </Text>
+                    </TouchableOpacity>
 
+                    {showDatePicker && (
+                      <DateTimePicker
+                        value={selectedDate}
+                        mode="date"
+                        display="default"
+                        onChange={handleDateChange}
+                        maximumDate={new Date()}
+                      />
+                    )}
                 </View>
+
             </View>
 
             <View style={styles.rocordPageBottomContainer}>
@@ -858,6 +959,62 @@ async function deleteCategory(id) {
                         ]}
                       >
                         {cat.name}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
+            </View>
+
+            <View style={{ width: '90%', marginVertical: 4, height: 42 }}>
+              <ScrollView 
+                horizontal 
+                showsHorizontalScrollIndicator={false} 
+                nestedScrollEnabled={true}
+                contentContainerStyle={{ alignItems: 'center', paddingHorizontal: 10 }}
+              >
+                <TouchableOpacity
+                  onPress={() => setSelectedMonthFilter('all')}
+                  style={[
+                    styles.categoryBadge,
+                    { 
+                      borderColor: colors.border, 
+                      backgroundColor: selectedMonthFilter === 'all' ? '#3b82f6' : 'transparent' 
+                    }
+                  ]}
+                >
+                  <Text style={styles.categoryBadgeIcon}>📅</Text>
+                  <Text 
+                    style={[
+                      styles.categoryBadgeText, 
+                      { color: selectedMonthFilter === 'all' ? '#fff' : colors.text }
+                    ]}
+                  >
+                    All Time
+                  </Text>
+                </TouchableOpacity>
+
+                {availableMonths.map((monthString, index) => {
+                  const isSelected = selectedMonthFilter === monthString;
+                  return (
+                    <TouchableOpacity
+                      key={index}
+                      onPress={() => setSelectedMonthFilter(monthString)}
+                      style={[
+                        styles.categoryBadge,
+                        { 
+                          borderColor: colors.border, 
+                          backgroundColor: isSelected ? '#3b82f6' : 'transparent' 
+                        }
+                      ]}
+                    >
+                      <Text 
+                        style={[
+                          styles.categoryBadgeText, 
+                          { color: isSelected ? '#fff' : colors.text }
+                        ]}
+                      >
+                        {monthString}
                       </Text>
                     </TouchableOpacity>
                   );
