@@ -64,6 +64,9 @@ export default function App() {
 
   const [editingCategoryId, setEditingCategoryId] = useState(null); // ID kategorie, kterou upravujeme
 
+  // Výchozi hodnota 'all' zoberazi vsechny kategorie
+  const [filterCategory, setFilterCategory] = useState('all');
+
   useEffect(() => {
     const loadSettings = async () => {
       try {
@@ -455,9 +458,11 @@ async function deleteCategory(id) {
     );
   }
 
-  const filteredTransactions = transactions.filter(item => {
-    if (filterType === 'all') return true; //vse  
-    return item.type === filterType; // jen prijmy nebo vydaje
+  const filteredTransactions = transactions.filter(tx => {
+    const matchesType = filterType === 'all' || tx.type === filterType;
+    const matchesCategory = filterCategory === 'all' || tx.category_name === filterCategory;
+
+    return matchesType && matchesCategory;
   });
 
   const colors = isDarkMode ? theme.dark : theme.light;
@@ -801,6 +806,63 @@ async function deleteCategory(id) {
                 </Text>
               </TouchableOpacity> 
 
+            </View>
+
+            <View style={{ width: '90%', marginBottom: 5, height: 42 }}>
+              <ScrollView 
+                horizontal 
+                showsHorizontalScrollIndicator={false} 
+                nestedScrollEnabled={true}
+                contentContainerStyle={{ alignItems: 'center', paddingHorizontal: 10 }}
+              >
+                <TouchableOpacity
+                  onPress={() => setFilterCategory('all')}
+                  style={[
+                    styles.categoryBadge,
+                    { 
+                      borderColor: colors.border, 
+                      backgroundColor: filterCategory === 'all' ? '#3b82f6' : 'transparent' 
+                    }
+                  ]}
+                >
+                  <Text style={styles.categoryBadgeIcon}>🌐</Text>
+                  <Text 
+                    style={[
+                      styles.categoryBadgeText, 
+                      { color: filterCategory === 'all' ? '#fff' : colors.text }
+                    ]}
+                  >
+                    All
+                  </Text>
+                </TouchableOpacity>
+
+                {userCategories.map((cat, index) => {
+                  const isSelected = filterCategory === cat.name;
+                  return (
+                    <TouchableOpacity
+                      key={index}
+                      onPress={() => setFilterCategory(cat.name)}
+                      style={[
+                        styles.categoryBadge,
+                        { 
+                          borderColor: colors.border, 
+                          backgroundColor: isSelected ? '#3b82f6' : 'transparent' 
+                        }
+                      ]}
+                    >
+                      <Text style={styles.categoryBadgeIcon}>{cat.icon}</Text>
+                      <Text 
+                        style={[
+                          styles.categoryBadgeText, 
+                          { color: isSelected ? '#fff' : colors.text }
+                        ]}
+                      >
+                        {cat.name}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </ScrollView>
             </View>
             
             <ScrollView
@@ -1185,7 +1247,7 @@ const styles = StyleSheet.create({
     padding: 15,
     borderRadius: 12,
     alignItems: 'center',
-    marginBottom: 30,
+    marginBottom: 10,
     marginHorizontal: 5,
     borderWidth: 1,
   },
@@ -1342,7 +1404,7 @@ const styles = StyleSheet.create({
 categoriesSectionContainer: {
     flexDirection: 'column',
     width: '90%',
-    marginTop: 10,
+    marginTop: 5,
     marginBottom: 5,
   },
   categoriesScroll: {
