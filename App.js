@@ -592,6 +592,7 @@ async function deleteCategory(id) {
   const categoriesArray = Object.values(categoryTotals)
     .map(cat => ({
       ...cat,
+      total: parseFloat(cat.total.toFixed(2)),
       percentage: Math.round((cat.total / totalExpenses) * 100),
     }))
     .sort((a, b) => b.total - a.total); 
@@ -685,7 +686,7 @@ async function deleteCategory(id) {
 
               <View style={styles.summaryRow}>
                 <Text style={[styles.summaryText, { color: '#22c55e' }]}>
-                  Incomes: {monthlySummary.income.toLocaleString('cs-CZ')} {defaultCurrency}
+                  Incomes: {parseFloat(monthlySummary.income.toFixed(2)).toLocaleString('cs-CZ')} {defaultCurrency}
                 </Text>
               </View>
 
@@ -695,7 +696,7 @@ async function deleteCategory(id) {
               
                <View style={styles.summaryRow}>
                 <Text style={[styles.summaryText, { color: '#ef4444' }]}>
-                  Expenses: {monthlySummary.expenses.toLocaleString('cs-CZ')} {defaultCurrency}
+                  Expenses: {parseFloat(monthlySummary.expenses.toFixed(2)).toLocaleString('cs-CZ')} {defaultCurrency}
                 </Text>
               </View>
               
