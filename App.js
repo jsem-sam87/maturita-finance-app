@@ -526,7 +526,7 @@ async function deleteCategory(id) {
     return Array.from(monthsSet);
   }
 
-const handleDateChange = (event, selectedDateFromPicker) => {
+  const handleDateChange = (event, selectedDateFromPicker) => {
   if (Platform.OS === 'android') {
     setShowDatePicker(false);
   }
@@ -540,35 +540,61 @@ const handleDateChange = (event, selectedDateFromPicker) => {
   }
 };
 
-//vypocet castky za urcity mesic
-const mainPageMonthTransactions = transactions.filter(tx => {
-  const itemMonth = formatMonthYear(tx.created_at, 'en');
-  return selectedMonthFilter === 'all' || itemMonth === selectedMonthFilter;
-});
+  //vypocet castky za urcity mesic
+  const mainPageMonthTransactions = transactions.filter(tx => {
+    const itemMonth = formatMonthYear(tx.created_at, 'en');
+    return selectedMonthFilter === 'all' || itemMonth === selectedMonthFilter;
+  });
 
-const monthlySummary = mainPageMonthTransactions.reduce(
-  (acc, tx) => {
-    const rawAmount = Number(tx.amount) || 0;
-    const txCurrency = tx.currency || 'CZK';
+  const monthlySummary = mainPageMonthTransactions.reduce(
+    (acc, tx) => {
+      const rawAmount = Number(tx.amount) || 0;
+      const txCurrency = tx.currency || 'CZK';
 
-    const convertedAmount = convertCurrency(rawAmount, txCurrency, defaultCurrency);
+      const convertedAmount = convertCurrency(rawAmount, txCurrency, defaultCurrency);
 
-    if (tx.type === 'income') {
-      acc.income += convertedAmount;
-    } else if (tx.type === 'expense') {
-      acc.expenses += convertedAmount;
-    }
-    return acc;
-  },
-  { income: 0, expenses: 0 }
-);
+      if (tx.type === 'income') {
+        acc.income += convertedAmount;
+      } else if (tx.type === 'expense') {
+        acc.expenses += convertedAmount;
+      }
+      return acc;
+    },
+    { income: 0, expenses: 0 }
+  );
 
-//progress bary
-const maxAmount = Math.max(monthlySummary.income, monthlySummary.expenses, 1);
+  //progress bary
+  const maxAmount = Math.max(monthlySummary.income, monthlySummary.expenses, 1);
 
-const incomeWidth = `${Math.min(100, Math.round((monthlySummary.income / maxAmount) * 100))}%`;
-const expenseWidth = `${Math.min(100, Math.round((monthlySummary.expenses / maxAmount) * 100))}%`;
+  const incomeWidth = `${Math.min(100, Math.round((monthlySummary.income / maxAmount) * 100))}%`;
+  const expenseWidth = `${Math.min(100, Math.round((monthlySummary.expenses / maxAmount) * 100))}%`;
 
+  // 1. Spočítáme výdaje podle kategorií pro vybraný měsíc
+  const categoryTotals = mainPageMonthTransactions
+    .filter(tx => tx.type === 'expense')
+    .reduce((acc, tx) => {
+      const catName = tx.category_name || 'Ostání';
+      const catIcon = tx.category_icon || '📦';
+      const rawAmount = Number(tx.amount) || 0;
+      const txCurrency = tx.currency || 'CZK';
+
+      const convertedAmount = convertCurrency(rawAmount, txCurrency, defaultCurrency);
+
+      if (!acc[catName]) {
+        acc[catName] = { name: catName, icon: catIcon, total: 0 };
+      }
+      acc[catName].total += convertedAmount;
+      return acc;
+    }, {});
+
+  const totalExpenses = monthlySummary.expenses || 1;
+
+  const categoriesArray = Object.values(categoryTotals)
+    .map(cat => ({
+      ...cat,
+      percentage: Math.round((cat.total / totalExpenses) * 100),
+    }))
+    .sort((a, b) => b.total - a.total); 
 
   const colors = isDarkMode ? theme.dark : theme.light;
 
@@ -676,6 +702,30 @@ const expenseWidth = `${Math.min(100, Math.round((monthlySummary.expenses / maxA
               <View style={styles.progressBarTrack}>
                 <View style={[styles.progressBarFill, { width: expenseWidth, backgroundColor: '#ef4444' }]} />
               </View>
+
+              {categoriesArray.length > 0 && (
+              <View style={styles.categoriesSection}>
+                <View style={[styles.divider, {backgroundColor: colors.text}]} />
+                  <Text style={[styles.categoriesTitle, {color: colors.primary}]}>Expenses Breakdown</Text>
+
+                  {categoriesArray.map((cat, idx) => (
+                  <View key={idx} style={styles.catRow}>
+                    <View style={styles.catInfoRow}>
+                      <Text style={[styles.catName, {color: colors.text}]}>
+                        {cat.icon} {cat.name}
+                      </Text>
+                      <Text style={[styles.catAmount, {color: colors.text}]}>
+                        {cat.total.toLocaleString('cs-CZ')} {defaultCurrency} ({cat.percentage}%)
+                      </Text>
+                    </View>
+                    {/* Mini progress bar pro konkretni categorii*/}
+                    <View style={styles.miniBarTrack}>
+                      <View style={[styles.miniBarFill, { width: `${cat.percentage}%`, backgroundColor: colors.primary }]} />
+                    </View>
+                  </View>
+                ))}
+              </View>
+            )}
 
             </View>
 
@@ -1756,5 +1806,47 @@ progressBarTrack: {
 progressBarFill: {
   height: '100%',
   borderRadius: 5,
+},
+
+categoriesSection: {
+  marginTop: 10,
+},
+divider: {
+  height: 1,
+  marginVertical: 12,
+},
+categoriesTitle: {
+  fontSize: 13,
+  fontWeight: '700',
+  marginBottom: 10,
+  textTransform: 'uppercase',
+  letterSpacing: 0.5,
+},
+catRow: {
+  marginBottom: 10,
+},
+catInfoRow: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  marginBottom: 4,
+},
+catName: {
+  fontSize: 13,
+  fontWeight: '600',
+},
+catAmount: {
+  fontSize: 12,
+  fontWeight: '600',
+},
+miniBarTrack: {
+  height: 6,
+  borderRadius: 3,
+  overflow: 'hidden',
+  width: '100%',
+},
+miniBarFill: {
+  height: '100%',
+  borderRadius: 3,
 },
 });
