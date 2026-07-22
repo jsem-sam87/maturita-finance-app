@@ -527,21 +527,47 @@ async function deleteCategory(id) {
   }
 
 const handleDateChange = (event, selectedDateFromPicker) => {
-  // Na Androidu zavřeme picker po výběru/zrušení
   if (Platform.OS === 'android') {
     setShowDatePicker(false);
   }
 
-  // Pokud uživatel potvrdil výběr (stiskl OK)
   if (event.type === 'set' && selectedDateFromPicker) {
     setSelectedDate(selectedDateFromPicker);
   }
 
-  // Na iOS se zavírá ručně, pokud nepoužíváš inline režim
   if (Platform.OS === 'ios') {
     setShowDatePicker(false);
   }
 };
+
+//vypocet castky za urcity mesic
+const mainPageMonthTransactions = transactions.filter(tx => {
+  const itemMonth = formatMonthYear(tx.created_at, 'en');
+  return selectedMonthFilter === 'all' || itemMonth === selectedMonthFilter;
+});
+
+const monthlySummary = mainPageMonthTransactions.reduce(
+  (acc, tx) => {
+    const rawAmount = Number(tx.amount) || 0;
+    const txCurrency = tx.currency || 'CZK';
+
+    const convertedAmount = convertCurrency(rawAmount, txCurrency, defaultCurrency);
+
+    if (tx.type === 'income') {
+      acc.income += convertedAmount;
+    } else if (tx.type === 'expense') {
+      acc.expenses += convertedAmount;
+    }
+    return acc;
+  },
+  { income: 0, expenses: 0 }
+);
+
+//progress bary
+const maxAmount = Math.max(monthlySummary.income, monthlySummary.expenses, 1);
+
+const incomeWidth = `${Math.min(100, Math.round((monthlySummary.income / maxAmount) * 100))}%`;
+const expenseWidth = `${Math.min(100, Math.round((monthlySummary.expenses / maxAmount) * 100))}%`;
 
 
   const colors = isDarkMode ? theme.dark : theme.light;
@@ -584,10 +610,75 @@ const handleDateChange = (event, selectedDateFromPicker) => {
             <Text style={styles.primaryButtonText}>+ Add record</Text>
           </TouchableOpacity>
 
-          <TouchableOpacity style={[styles.secondaryButton, { borderColor: colors.border }]} onPress={() => setHistoryVisible(true)}>
+          <TouchableOpacity style={[styles.secondaryButton, { borderColor: colors.border }]} onPress={() => {   setHistoryVisible(true);
+            setFilterType('all');
+            setFilterCategory('all');
+            setSelectedMonthFilter('all');
+          }}>
             <Text style={{ color: colors.text, fontWeight: '600' }}>Show history</Text>
           </TouchableOpacity>
         </View>
+            <View style={[styles.summaryContainer, {backgroundColor: colors.background, borderColor: colors.border}]}>
+              <View style={{ height: 40, marginBottom: 12 }}>
+                <ScrollView 
+                  horizontal 
+                  showsHorizontalScrollIndicator={false} 
+                  contentContainerStyle={{ alignItems: 'center' }}
+                >
+                  <TouchableOpacity
+                    onPress={() => setSelectedMonthFilter('all')}
+                    style={[
+                      styles.monthFilterBadge,
+                      { backgroundColor: selectedMonthFilter === 'all' ? '#3b82f6' : 'transparent', borderColor: colors.border }
+                    ]}
+                  >
+                    <Text style={{ color: colors.text, fontWeight: '600', fontSize: 13 }}>
+                      All Time
+                    </Text>
+                  </TouchableOpacity>
+
+                  {availableMonths.map((monthString, index) => {
+                    const isSelected = selectedMonthFilter === monthString;
+                    return (
+                      <TouchableOpacity
+                        key={index}
+                        onPress={() => setSelectedMonthFilter(monthString)}
+                        style={[
+                          styles.monthFilterBadge,
+                          { backgroundColor: isSelected ? '#3b82f6' : 'transparent', borderColor: colors.border }
+                        ]}
+                      >
+                        <Text style={{ color: colors.text, fontWeight: '600', fontSize: 13 }}>
+                          {monthString}
+                        </Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              </View>
+
+              <View style={styles.summaryRow}>
+                <Text style={[styles.summaryText, { color: '#22c55e' }]}>
+                  Incomes: {monthlySummary.income.toLocaleString('cs-CZ')} {defaultCurrency}
+                </Text>
+              </View>
+
+              <View style={styles.progressBarTrack}>
+                <View style={[styles.progressBarFill, { width: incomeWidth, backgroundColor: '#22c55e' }]} />
+              </View>
+              
+               <View style={styles.summaryRow}>
+                <Text style={[styles.summaryText, { color: '#ef4444' }]}>
+                  Expenses: {monthlySummary.expenses.toLocaleString('cs-CZ')} {defaultCurrency}
+                </Text>
+              </View>
+              
+              <View style={styles.progressBarTrack}>
+                <View style={[styles.progressBarFill, { width: expenseWidth, backgroundColor: '#ef4444' }]} />
+              </View>
+
+            </View>
+
       </View>  
       {/* <TouchableOpacity style={[ styles.signOutButton, {borderColor: colors.border}]} onPress={handleSignOut}>
         <Text style={{ color: colors.text, fontWeight: '600',}}>Sign Out</Text>
@@ -1043,7 +1134,11 @@ const handleDateChange = (event, selectedDateFromPicker) => {
               )}
             </ScrollView>
 
-            <TouchableOpacity onPress={() => setHistoryVisible(false)}
+            <TouchableOpacity onPress={() => {
+              setHistoryVisible(false);
+              setFilterType('all');
+              setFilterCategory('all');
+              setSelectedMonthFilter('all');}}
               style={[styles.closeHistoryButton, {borderColor: colors.border }]}>
               <Text style={{ color: colors.text}}>Close history</Text>
             </TouchableOpacity>
@@ -1587,7 +1682,7 @@ categoriesSectionContainer: {
     fontSize: 14,
   },
   addCategoryRow: {
-    flexDirection: 'row',      // Pouze inputy a tlačítko vedle sebe
+    flexDirection: 'row',    
     alignItems: 'center',
     justifyContent: 'space-between',
     width: '100%',             
@@ -1624,4 +1719,42 @@ categoriesSectionContainer: {
     fontWeight: 'bold',
     fontSize: 14,
   },
+
+  summaryContainer: {
+  width: '90%',
+  alignSelf: 'center',
+  marginVertical: 14,
+  padding: 16,
+  borderRadius: 16,
+  borderWidth: 1,
+},
+monthFilterBadge: {
+  paddingHorizontal: 14,
+  paddingVertical: 6,
+  borderRadius: 20,
+  borderWidth: 1,
+  marginRight: 8,
+},
+summaryRow: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  marginBottom: 10,
+},
+summaryText: {
+  fontSize: 14,
+  fontWeight: '700',
+},
+progressBarTrack: {
+  height: 10,
+  backgroundColor: '#334155',
+  borderRadius: 5,
+  overflow: 'hidden',
+  marginBottom: 8,
+  width: '100%',
+},
+progressBarFill: {
+  height: '100%',
+  borderRadius: 5,
+},
 });
