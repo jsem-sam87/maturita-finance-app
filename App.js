@@ -1,10 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import { StatusBar } from 'expo-status-bar';
-import { StyleSheet, Text, View, TextInput, Button, Alert, TouchableOpacity, ActivityIndicator, Modal, ScrollView, Settings } from 'react-native';
+import { Linking, StyleSheet, Text, View, TextInput, Button, Alert, TouchableOpacity, ActivityIndicator, Modal, ScrollView, Settings } from 'react-native';
 import { supabase } from './supabase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Platform } from 'react-native';
+
+const PRIVACY_POLICY_URL = 'https://jsem-sam87.github.io/finance-tracker-app-privacy-policy/';
+
+const handleOpenPrivacyPolicy = async () => {
+  const supported = await Linking.canOpenURL(PRIVACY_POLICY_URL);
+  if (supported) {
+    await Linking.openURL(PRIVACY_POLICY_URL);
+  }
+};
 
 //fixni kurzy k 1czk
 const EXCHANGE_RATES = {
@@ -623,7 +632,7 @@ async function deleteCategory(id) {
 
         </View>
         <ScrollView 
-          style={{ width: '100%' }}
+          style={{ width: '100%', marginBottom: 20, }}
           contentContainerStyle={{ 
             alignItems: 'center',
             paddingBottom: 40,
@@ -1283,7 +1292,6 @@ async function deleteCategory(id) {
               </TouchableOpacity> 
             </View>
 
-
           </View>
 
             <View style={styles.settingsActions}>
@@ -1318,6 +1326,15 @@ async function deleteCategory(id) {
                 </Text>
               </TouchableOpacity>
             </View>
+              <TouchableOpacity 
+                style={{ paddingVertical: 12, alignItems: 'center'}}
+                onPress={handleOpenPrivacyPolicy}
+              >
+                <Text style={{ color: colors.primary, textDecorationLine: 'underline', fontSize: 13 }}>
+                  Privacy Policy & Terms of Use
+                </Text>
+              </TouchableOpacity>
+
 
           </View>
         </Modal>
@@ -1388,7 +1405,19 @@ async function deleteCategory(id) {
       </TouchableOpacity>
 
       <StatusBar style="auto" />
+
+      <Text style={{ color: '#8E8E93', fontSize: 12, textAlign: 'center', marginBottom: 15 }}>
+          By continuing, you agree to our{' '}
+          <Text 
+            style={{ color: colors.primary, textDecorationLine: 'underline' }}
+            onPress={handleOpenPrivacyPolicy}
+          >
+            Privacy Policy & Terms
+          </Text>
+          .
+      </Text>
     </View>
+    
   );
 }
 
@@ -1512,7 +1541,7 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     borderRadius: 12,
     alignItems: 'center',
-    marginBottom: 30,
+    marginBottom: 10,
     width: '90%',
   },
   incomeExpenseButton: {
