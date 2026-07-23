@@ -384,7 +384,7 @@ async function deleteCategory(id) {
     if (error) {
       Alert.alert('Registion failed', error.message);
     } else {
-      Alert.alert('Success!', 'Your account was created successfully. You can loggin now!');
+      Alert.alert('Success!', 'Your account was created successfully.');
     }
   }
 
@@ -604,47 +604,55 @@ async function deleteCategory(id) {
   // --- Main page ---
 
   if (session) {
-    return(
-      <View style={[styles.container, {backgroundColor: colors.background}]}>
-        <View style={styles.headerRow}>
-          <Text style={[styles.mainPageTitle, { color: colors.primary }]}>Main page</Text>
-          
-          {/* <TouchableOpacity 
-            style={styles.themeToggle}
-            onPress={() => setIsDarkMode(!isDarkMode)}
-          >
-            <Text style={{ fontSize: 24 }}>{isDarkMode ? '☀️' : '🌙'}</Text>
-          </TouchableOpacity>  */}
-          <TouchableOpacity 
-            onPress={() => setSettingsVisible(true)}
-          >
-            <Text style={{ fontSize: 24, color: colors.text }}>⚙️</Text>
-          </TouchableOpacity>
+    return(   
+        <View style={[styles.container, {backgroundColor: colors.background}]}>
+          <View style={styles.headerRow}>
+            <Text style={[styles.mainPageTitle, { color: colors.primary }]}>Main page</Text>
+            
+            {/* <TouchableOpacity 
+              style={styles.themeToggle}
+              onPress={() => setIsDarkMode(!isDarkMode)}
+            >
+              <Text style={{ fontSize: 24 }}>{isDarkMode ? '☀️' : '🌙'}</Text>
+            </TouchableOpacity>  */}
+            <TouchableOpacity 
+              onPress={() => setSettingsVisible(true)}
+            >
+              <Text style={{ fontSize: 24, color: colors.text }}>⚙️</Text>
+            </TouchableOpacity>
 
-      </View>
-      <View style={styles.contentContainer}>
-        <Text style={{ color: colors.text }}>Welcome {session.user.email}</Text>
-        <View style={[styles.balanceCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
-          <Text style={{ color: colors.textMuted, fontSize: 14, fontWeight: '600', letterSpacing: 0.5 }}>
-              CURRENT BALANCE:
-          </Text>
-          <Text style={{ color: colors.primary, fontSize: 36, fontWeight: '800', marginTop: 10 }}>
-              {balance} {defaultCurrency}
-          </Text>
         </View>
-        <View style={styles.actionsRow}>
-          <TouchableOpacity style={styles.primaryButton} onPress={handleOpenAdd}>
-            <Text style={styles.primaryButtonText}>+ Add record</Text>
-          </TouchableOpacity>
+        <ScrollView 
+          style={{ width: '100%' }}
+          contentContainerStyle={{ 
+            alignItems: 'center',
+            paddingBottom: 40,
+          }}
+          showsVerticalScrollIndicator={false}
+        >
+          <Text style={{ color: colors.text }}>Welcome {session.user.email}</Text>
+          <View style={[styles.balanceCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={{ color: colors.textMuted, fontSize: 14, fontWeight: '600', letterSpacing: 0.5 }}>
+                CURRENT BALANCE:
+            </Text>
+            <Text style={{ color: colors.primary, fontSize: 36, fontWeight: '800', marginTop: 10 }}>
+                {balance} {defaultCurrency}
+            </Text>
+          </View>
+          <View style={styles.actionsRow}>
+            <TouchableOpacity style={styles.primaryButton} onPress={handleOpenAdd}>
+              <Text style={styles.primaryButtonText}>+ Add record</Text>
+            </TouchableOpacity>
 
-          <TouchableOpacity style={[styles.secondaryButton, { borderColor: colors.border }]} onPress={() => {   setHistoryVisible(true);
-            setFilterType('all');
-            setFilterCategory('all');
-            setSelectedMonthFilter('all');
-          }}>
-            <Text style={{ color: colors.text, fontWeight: '600' }}>Show history</Text>
-          </TouchableOpacity>
-        </View>
+            <TouchableOpacity style={[styles.secondaryButton, { borderColor: colors.border }]} onPress={() => {   setHistoryVisible(true);
+              setFilterType('all');
+              setFilterCategory('all');
+              setSelectedMonthFilter('all');
+            }}>
+              <Text style={{ color: colors.text, fontWeight: '600' }}>Show history</Text>
+            </TouchableOpacity>
+            
+          </View>
             <View style={[styles.summaryContainer, {backgroundColor: colors.background, borderColor: colors.border}]}>
               <View style={{ height: 40, marginBottom: 12 }}>
                 <ScrollView 
@@ -694,7 +702,7 @@ async function deleteCategory(id) {
                 <View style={[styles.progressBarFill, { width: incomeWidth, backgroundColor: '#22c55e' }]} />
               </View>
               
-               <View style={styles.summaryRow}>
+                <View style={styles.summaryRow}>
                 <Text style={[styles.summaryText, { color: '#ef4444' }]}>
                   Expenses: {parseFloat(monthlySummary.expenses.toFixed(2)).toLocaleString('cs-CZ')} {defaultCurrency}
                 </Text>
@@ -730,7 +738,8 @@ async function deleteCategory(id) {
 
             </View>
 
-      </View>  
+        </ScrollView> 
+
       {/* <TouchableOpacity style={[ styles.signOutButton, {borderColor: colors.border}]} onPress={handleSignOut}>
         <Text style={{ color: colors.text, fontWeight: '600',}}>Sign Out</Text>
       </TouchableOpacity> */}
