@@ -755,7 +755,9 @@ async function deleteCategory(id) {
 
     {/* --- Add record page --- */}
 
-        <Modal visible={modalVisible} animationType="slide" transparent={false}>
+        <Modal visible={modalVisible} animationType="slide" transparent={false} onRequestClose={() => {
+        setModalVisible(false);}}
+        >
           <View style={[styles.container, {backgroundColor: colors.background, paddingTop: 20}]}>
             <View style={styles.headerRow}>
               <Text style={[styles.recordPageTitle, { color: colors.primary }]}>{editingId ? "Edit record:" : "New record:"}</Text>
@@ -1000,7 +1002,9 @@ async function deleteCategory(id) {
 
     {/* --- Transaction history page --- */}
 
-        <Modal visible={historyVisible} animationType="slide" transparent={false}>
+        <Modal visible={historyVisible} animationType="slide" transparent={false} onRequestClose={() => {
+        setHistoryVisible(false);}}
+        >
           <View style={[styles.container, {backgroundColor: colors.background, paddingTop: 20}]}>
             <View style={styles.headerRow}>
               <Text style={[styles.historyPageTitle, { color: colors.primary }]}>Transaction history:</Text>
@@ -1215,7 +1219,8 @@ async function deleteCategory(id) {
         </Modal>
         
       {/* --- Settings page --- */}
-        <Modal visible={settingsVisible} animationType="slide" transparent={false}>
+        <Modal visible={settingsVisible} animationType="slide" transparent={false} onRequestClose={() => { setSettingsVisible(false); }}
+          >
           <View style={[styles.container, { backgroundColor: colors.background, paddingTop: 20}]}>
             <View style={styles.headerRow}>
               <Text style={[styles.settingsPageTitle, { color: colors.primary}]}>
